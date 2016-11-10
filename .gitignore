@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+
+# HRATC Project
+
+*~
+*.workspace
+*.user
+./CMakeLists.txt
