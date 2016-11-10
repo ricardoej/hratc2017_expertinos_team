@@ -27,7 +27,6 @@ include_directories(
 )
 
 # add_executable(hratc2016_entry_template_node src/hratc2016_entry_template_node.cpp)
-add_executable(pointcloud_generator_node examples/cpp/pointcloud_generator.cpp)
 add_executable(random_walk_navigation_node examples/cpp/random_walk_navigation.cpp)
 add_executable(random_walk_simple_node examples/cpp/random_walk_simple.cpp)
 add_executable(read_metal_detector_node examples/cpp/read_metal_detector.cpp)
@@ -38,7 +37,6 @@ add_executable(get_global_odom_node examples/cpp/get_global_odom.cpp)
 
 add_dependencies(read_metal_detector_node metal_detector_msgs_generate_messages_py)
 
-target_link_libraries(pointcloud_generator_node ${catkin_LIBRARIES})
 target_link_libraries(random_walk_navigation_node ${catkin_LIBRARIES})
 target_link_libraries(random_walk_simple_node ${catkin_LIBRARIES})
 target_link_libraries(read_metal_detector_node ${catkin_LIBRARIES})
