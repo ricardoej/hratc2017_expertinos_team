@@ -1,6 +1,6 @@
 /**
- *  This source file implements the main function that calls the Metal Detector
- *node controller.
+ *  This source file implements the main function that calls the Landmine
+ *Analyzer node controller.
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
@@ -9,7 +9,7 @@
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
-#include "entries/metal_detector_node.h"
+#include "entries/landmine_analyzer.h"
 
 /**
  * @brief main
@@ -19,9 +19,9 @@
  */
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "metal_detector_node");
+  ros::init(argc, argv, "landmine_analyzer_node");
   ros::NodeHandle nh;
-  entries::MetalDetectorNode node(&nh);
+  entries::LandmineAnalyzer node(&nh);
   node.spin();
   return 0;
 }

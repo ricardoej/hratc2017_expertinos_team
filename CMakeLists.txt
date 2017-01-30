@@ -32,16 +32,18 @@ include_directories(
 )
 
 set(H_FILES
+  include/sensors/coils.h
   include/utilities/enum_converter.h
   include/utilities/exception.h
   include/utilities/ros_node.h
 )
 
 set(CPP_FILES
+  src/sensors/coils.cpp
   src/utilities/exception.cpp
   src/utilities/ros_node.cpp
 )
 
-add_executable(metal_detector_node src/metal_detector_node.cpp src/entries/metal_detector_node.cpp ${CPP_FILES})
-add_dependencies(metal_detector_node metal_detector_msgs_generate_messages_py)
-target_link_libraries(metal_detector_node ${catkin_LIBRARIES})
+add_executable(landmine_analyzer_node src/landmine_analyzer_node.cpp src/entries/landmine_analyzer.cpp ${CPP_FILES})
+add_dependencies(landmine_analyzer_node metal_detector_msgs_generate_messages_py)
+target_link_libraries(landmine_analyzer_node ${catkin_LIBRARIES})

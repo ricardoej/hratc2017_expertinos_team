@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+        <node name="landmine_analyzer" pkg="hratc2017_entry" type="landmine_analyzer_node" output="screen">
+        </node>
+</launch>
