@@ -2,6 +2,6 @@
 <launch>
         <arg name="_robot" default="p3at"/>
         <group ns="$(arg _robot)">
-                <include file="$(find hratc2017_entry)/launch/metal_detector.launch"/>
+                <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch"/>
 	</group>
 </launch>

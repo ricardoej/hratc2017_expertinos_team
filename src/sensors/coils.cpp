@@ -14,7 +14,7 @@
 namespace sensors
 {
 
-const float Coils::THRESHOLD = 1.0f;
+const float Coils::THRESHOLD = 0.65f;
 
 /**
  * @brief Coils::Coils
