@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+        <arg name="_robot" default="p3at"/>
+        <group ns="$(arg _robot)">
+                <node name="metal_detector_node" pkg="hratc2017_entry" type="metal_detector_node" output="screen">
+		</node>
+	</group>
+</launch>
