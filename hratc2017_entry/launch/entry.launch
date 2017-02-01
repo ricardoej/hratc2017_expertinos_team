@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="_robot" default="p3at"/>
+  <group ns="$(arg _robot)">
+    <!--<include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch"/>-->
+  </group>
+  <include file="$(find p3at_2dnav)/launch/navigation.launch">
+  </include>
+</launch>

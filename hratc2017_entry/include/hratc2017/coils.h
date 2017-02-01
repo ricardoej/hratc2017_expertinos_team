@@ -3,7 +3,7 @@
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
- *  Modified on: 30/01/2017
+ *  Modified on: 01/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -15,7 +15,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <metal_detector_msgs/Coil.h>
 
-namespace sensors
+namespace hratc2017
 {
 
 class  Coils

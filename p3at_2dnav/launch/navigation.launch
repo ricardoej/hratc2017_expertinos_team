@@ -1,0 +1,7 @@
+<launch>
+  <!--<node name="map_server" pkg="map_server" type="map_server" args="path_to_map.yaml"/>-->
+
+  <include file="$(find p2os_launch)/launch/amcl.launch" />
+
+  <include file="$(find p3at_2dnav)/launch/move_base.launch" />
+</launch>

@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
- *  Modified on: 30/01/2017
+ *  Modified on: 01/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -17,9 +17,9 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <utilities/ros_node.h>
-#include "sensors/coils.h"
+#include "hratc2017/coils.h"
 
-namespace entries
+namespace hratc2017
 {
 
 class LandmineAnalyzer : public utilities::ROSNode
@@ -32,7 +32,7 @@ private:
   tf::TransformListener tf_;
   ros::Subscriber coils_sub_;
   ros::Publisher set_mine_pub_;
-  sensors::Coils coils_;
+  Coils coils_;
   geometry_msgs::PoseStamped EMPTY_POSE;
   virtual void controlLoop();
   void landmineDetected(bool left_coil = true) const;

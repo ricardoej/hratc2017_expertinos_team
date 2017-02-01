@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>hratc2017_layers</name>
+  <version>0.0.2</version>
+  <description>The hratc2017_layers package.</description>
+
+  <maintainer email="adrianohrl@todo.todo">adrianohrl</maintainer>
+  <maintainer email="expertinos.unifei@gmail.com">UNIFEI Expertinos Team</maintainer>
+
+  <license>BSD</license>
+  <url type="website">https://github.com/ricardoej/hratc2017</url>
+  <author email="ricardoej@gmail.com">Ricardo Emerson Julio</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>costmap_2d</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>roscpp</run_depend>
+
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml"/>
+  </export>
+</package>
