@@ -1,5 +1,5 @@
 <launch>
-  <!--<node name="map_server" pkg="map_server" type="map_server" args="path_to_map.yaml"/>-->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/empty_world.yaml"/>
 
   <include file="$(find p2os_launch)/launch/amcl.launch" />
 
