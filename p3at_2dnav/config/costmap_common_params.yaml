@@ -20,7 +20,7 @@ inflation_radius: 0.35    # should be set to the maximum distance from obstacles
 #---(in meters)--- (verify)
 footprint: [ [0.3302, -0.0508], [0.254, -0.0508], [0.254, -0.254], [-0.254, -0.254], [-0.254, 0.254], [0.254, 0.254], [0.254, 0.0508], [0.3302, 0.0508] ]
 
-transform_tolerance: 0.2
+transform_tolerance: 0.5
 map_type: costmap
 
 plugins:
