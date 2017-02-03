@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.2
  *  Created on: 01/02/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 03/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -17,6 +17,8 @@
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Point.h>
 
 namespace hratc2017
 {
@@ -34,8 +36,11 @@ public:
 
 private:
   void reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level);
+  void setMineCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
-  double mark_x_, mark_y_;
+  ros::Subscriber set_mine_sub_;
+  double radius_;
+  std::vector<geometry_msgs::Point> marks_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>* dsrv_;
 };
 }

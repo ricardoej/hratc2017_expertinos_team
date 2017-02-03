@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.2
  *  Created on: 01/02/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 03/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -20,13 +20,14 @@ namespace hratc2017
 /**
  * @brief LandminesLayer::LandminesLayer
  */
-LandminesLayer::LandminesLayer() : dsrv_(NULL) {}
+LandminesLayer::LandminesLayer() : dsrv_(NULL), radius_(0.5) {}
 
 /**
  * @brief LandminesLayer::~LandminesLayer
  */
 LandminesLayer::~LandminesLayer()
 {
+  set_mine_sub_.shutdown();
   if (dsrv_)
   {
     delete dsrv_;
@@ -40,7 +41,18 @@ LandminesLayer::~LandminesLayer()
 void LandminesLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_);
+
+  nh.param("radius", radius_, 0.5);
+  ROS_INFO("    Landmine radius: %lf", radius_);
+
+  std::string source;
+  nh.param("topic", source, std::string("/HRATC_FW/set_mine"));
+  ROS_INFO("    Subscribed to topic: %s", source.c_str());
+
   current_ = true;
+
+  set_mine_sub_ = nh.subscribe(source, 10, &LandminesLayer::setMineCallback, this);
+
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
       cb = boost::bind(&LandminesLayer::reconfigureCB, this, _1, _2);
@@ -72,16 +84,10 @@ void LandminesLayer::updateBounds(double robot_x, double robot_y,
                                   double robot_yaw, double* min_x,
                                   double* min_y, double* max_x, double* max_y)
 {
-  if (!enabled_)
+  /*if (!enabled_)
   {
     return;
-  }
-  mark_x_ = robot_x + cos(robot_yaw);
-  mark_y_ = robot_y + sin(robot_yaw);
-  *min_x = std::min(*min_x, mark_x_);
-  *min_y = std::min(*min_y, mark_y_);
-  *max_x = std::max(*max_x, mark_x_);
-  *max_y = std::max(*max_y, mark_y_);
+  }*/
 }
 
 /**
@@ -101,9 +107,22 @@ void LandminesLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i,
   }
   unsigned int mx;
   unsigned int my;
-  if (master_grid.worldToMap(mark_x_, mark_y_, mx, my))
+  for (int i(0); i < marks_.size(); i++)
   {
-    master_grid.setCost(mx, my, costmap_2d::LETHAL_OBSTACLE);
+    if (master_grid.worldToMap(marks_[i].x, marks_[i].y, mx, my))
+    {
+      master_grid.setCost(mx, my, costmap_2d::LETHAL_OBSTACLE);
+    }
   }
+}
+
+/**
+ * @brief hratc2017::LandminesLayer::setMineCallback
+ * @param msg
+ */
+void LandminesLayer::setMineCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+  ROS_INFO("Adding a new landmine at (%f, %f).", msg->pose.position.x, msg->pose.position.y);
+  marks_.push_back(msg->pose.position);
 }
 }

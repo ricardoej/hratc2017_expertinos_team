@@ -1,0 +1,3 @@
+landmines_layer:
+  radius: 0.5
+  topic: '/HRATC_FW/set_mine'
