@@ -47,3 +47,6 @@ set(CPP_FILES
 add_executable(landmine_analyzer_node src/landmine_analyzer_node.cpp src/hratc2017/landmine_analyzer.cpp ${CPP_FILES})
 add_dependencies(landmine_analyzer_node metal_detector_msgs_generate_messages_py)
 target_link_libraries(landmine_analyzer_node ${catkin_LIBRARIES})
+
+add_executable(waypoints_controller_node src/waypoints_controller_node.cpp src/hratc2017/waypoints_controller.cpp ${CPP_FILES})
+target_link_libraries(waypoints_controller_node ${catkin_LIBRARIES})
