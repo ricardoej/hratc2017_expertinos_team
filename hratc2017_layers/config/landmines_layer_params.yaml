@@ -1,3 +1,4 @@
 landmines_layer:
-  radius: 0.5
+  num_parts: 18
+  radius: 0.25
   topic: '/HRATC_FW/set_mine'

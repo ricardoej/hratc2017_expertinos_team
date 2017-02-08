@@ -2,7 +2,7 @@
 <launch>
   <arg name="_robot" default="p3at"/>
   <group ns="$(arg _robot)">
-    <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch"/>
+    <!--<include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch"/>-->
     <include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>
   </group>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
