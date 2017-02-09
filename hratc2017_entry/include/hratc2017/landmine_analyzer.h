@@ -15,9 +15,13 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include "utilities/ros_node.h"
 #include "hratc2017/coils.h"
+
+#define COIL_SIGNAL_THRESHOLD 0.6
+#define SAMPLING_END_INTERVAL 2.0
 
 namespace hratc2017
 {
@@ -42,6 +46,11 @@ private:
   geometry_msgs::PoseStamped getCoilPose(bool left_coil = true) const;
   geometry_msgs::PoseStamped getLeftCoilPose() const;
   geometry_msgs::PoseStamped getRightCoilPose() const;
+  geometry_msgs::PolygonStamped landmine_;
+  double threshold_;
+  void reset();
+  bool sampling_;
+  double sampling_end_interval_;
 };
 }
 

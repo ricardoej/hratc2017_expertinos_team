@@ -22,6 +22,11 @@ namespace hratc2017
  */
 LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
 {
+  ros::NodeHandle pnh("~");
+  pnh.param("threshold", threshold_, COIL_SIGNAL_THRESHOLD);
+  ROS_INFO("   Coil signal threshold: %lf", threshold_);
+  pnh.param("sampling_end_interval", sampling_end_interval_, SAMPLING_END_INTERVAL);
+  ROS_INFO("   Sampling end interval: %f seconds", sampling_end_interval_);
   coils_sub_ =
       nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
   set_mine_pub_ =
@@ -32,6 +37,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   EMPTY_POSE.pose.position.z = 0;
   quaternionTFToMsg(tf::createQuaternionFromYaw(0.0 * M_PI / 180.0),
                     EMPTY_POSE.pose.orientation);
+  reset();
 }
 
 /**
@@ -97,6 +103,42 @@ void LandmineAnalyzer::coilsCallback(
 {
   coils_ = msg;
   ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
+
+  if(coils_.getLeft() < threshold_ && coils_.getRight() < threshold_)
+  {
+    if(!sampling_)
+      return;
+
+    double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
+
+    if (elapsed_time > sampling_end_interval_)
+    {
+      ROS_INFO("CÁLCULOS");
+      reset();
+    }
+  }
+  sampling_ = true;
+
+  landmine_.header.stamp = ros::Time::now();
+
+  geometry_msgs::PoseStamped coil_pose;
+
+  geometry_msgs::Point32 p;
+
+  if(coils_.getLeft() >= threshold_)
+  {
+    coil_pose = getLeftCoilPose();
+    p.x = coil_pose.pose.position.x;
+    p.y = coil_pose.pose.position.y;
+    landmine_.polygon.points.push_back(p);
+  }
+
+  if(coils_.getRight() >= threshold_)
+  {
+    coil_pose = getRightCoilPose();
+    p.x = coil_pose.pose.position.x;
+    p.y = coil_pose.pose.position.y;
+    landmine_.polygon.points.push_back(p);  }
 }
 
 /**
@@ -188,5 +230,11 @@ geometry_msgs::PoseStamped
 LandmineAnalyzer::getRightCoilPose() const
 {
   return getCoilPose(false);
+}
+
+void LandmineAnalyzer::reset()
+{
+  landmine_ = geometry_msgs::PolygonStamped();
+  sampling_ = false;
 }
 }
