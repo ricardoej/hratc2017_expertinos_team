@@ -58,6 +58,12 @@ private:
   void setVelocity(double vx, double wz);
   Coils coils_;
   void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
+  double vx_;
+  double wz_;
+  double Kp_;
+  double min_coil_signal_;
+  double max_coil_signal_;
+  double coil_signal_increment_;
 };
 }
 
