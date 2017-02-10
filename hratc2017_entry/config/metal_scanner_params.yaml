@@ -1,6 +1,6 @@
 linear_velocity_x: 0.1
 angular_velocity_z: 0.3
-Kp: 1
+Kp: 1.0
 min_coil_signal: 0.6
 max_coil_signal: 0.8
 coil_signal_increment: 0.1

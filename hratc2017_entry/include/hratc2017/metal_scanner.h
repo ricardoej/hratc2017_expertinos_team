@@ -20,7 +20,7 @@
 
 #define LINEAR_VELOCITY_X 0.1
 #define ANGULAR_VELOCITY_Z 0.3
-#define KP 1
+#define KP 1.0
 #define MIN_COIL_SIGNAL 0.6
 #define MAX_COIL_SIGNAL 0.8
 #define COIL_SIGNAL_INCREMENT 0.1

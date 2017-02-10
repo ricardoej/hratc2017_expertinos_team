@@ -26,7 +26,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh) : ROSNode(nh, 30)
   pnh.param("linear_velocity_x", vx_, LINEAR_VELOCITY_X);
   ROS_INFO("   Linear velocity x: %f", vx_);
 
-  pnh.param("angular_velocity_z", wx_, ANGULAR_VELOCITY_Z);
+  pnh.param("angular_velocity_z", wz_, ANGULAR_VELOCITY_Z);
   ROS_INFO("   Angular velocity z: %f", wz_);
 
   pnh.param("Kp", Kp_, KP);
@@ -67,14 +67,17 @@ void MetalScanner::controlLoop()
 
 StateEnum MetalScanner::getNextState()
 {
-  current_state_ =
+  //current_state_ =
 }
 
 void MetalScanner::setVelocity()
 {
-  switch (current_state_) {
+  double wz;
+
+  switch (current_state_)
+  {
   case states::S0:  //P controller is implemented here
-    double wz((coils_.getLeft() - coils_.getRight()) * Kp_);
+    wz = ((coils_.getLeft() - coils_.getRight()) * Kp_);
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
     break;
   case states::S1:
@@ -91,7 +94,6 @@ void MetalScanner::setVelocity()
     break;
   case states::S5:
     setVelocity(-vx_, 0);
-  default:
     break;
   }
 }
@@ -104,7 +106,7 @@ void MetalScanner::setVelocity(double vx, double wz)
   cmd_vel_pub_.publish(msg);
 }
 
-void MetalScanner::coilsCallback(const metal_detector_msgs::Coil_::ConstPtr &msg)
+void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr &msg)
 {
   coils_ = msg;
 }
