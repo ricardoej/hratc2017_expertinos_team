@@ -1,0 +1,18 @@
+topics:
+-
+  name    : navigation
+  topic   : move_base/cmd_vel
+  timeout : 0.0
+  priority: 50
+-
+  name    : metal_scanner
+  topic   : metal_scanner/cmd_vel
+  timeout : 0.5
+  priority: 100
+
+locks:
+-
+  name    : pause_scanning
+  topic   : pause_scanning
+  timeout : 0.0
+  priority: 100

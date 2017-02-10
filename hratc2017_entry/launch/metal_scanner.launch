@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-        <node name="metal_scanner" pkg="hratc2017_entry" type="metal_scanner_node" output="screen">
-		      <rosparam file="$(find hratc2017_entry)/config/metal_scanner_params.yaml" command="load"/>
-        </node>
+  <node name="metal_scanner" pkg="hratc2017_entry" type="metal_scanner_node" output="screen">
+    <rosparam file="$(find hratc2017_entry)/config/metal_scanner_params.yaml" command="load"/>
+    <remap from="cmd_vel" to="metal_scanner/cmd_vel"/>
+  </node>
 </launch>

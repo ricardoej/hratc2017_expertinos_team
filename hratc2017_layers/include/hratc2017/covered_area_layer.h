@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.2
  *  Created on: 01/02/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 09/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -13,14 +13,17 @@
 #define _HRATC2017_LAYERS_COVERED_AREA_LAYER_H_
 
 #include <ros/ros.h>
-#include <costmap_2d/layer.h>
+#include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 
+#define DEFAULT_VALUE 64
+#define DETECTION_RADIUS 0.15 //m
+
 namespace hratc2017
 {
-class CoveredAreaLayer : public costmap_2d::Layer, public costmap_2d::Costmap2D
+class CoveredAreaLayer : public costmap_2d::CostmapLayer
 {
 public:
   CoveredAreaLayer();
@@ -35,9 +38,14 @@ public:
   bool isDiscretized() { return true; }
 
   virtual void matchSize();
+  virtual void reset();
 
 private:
-  void reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level);
+  double radius_;
+  bool rolling_window_;
+  std::string global_frame_;
+  void reconfigureCallback(costmap_2d::GenericPluginConfig& config,
+                           uint32_t level);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>* dsrv_;
 };
 }

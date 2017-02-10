@@ -21,24 +21,26 @@ namespace hratc2017
 class  Coils
 {
 public:
-  Coils(float left = 0.0, float right = 0.0);
-  Coils(const metal_detector_msgs::Coil::ConstPtr& msg);
-  Coils(const metal_detector_msgs::Coil& msg);
+  Coils(double threshold = Coils::THRESHOLD, float left = 0.0, float right = 0.0);
+  Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold = Coils::THRESHOLD);
+  Coils(const metal_detector_msgs::Coil& msg, double threshold = Coils::THRESHOLD);
   virtual ~Coils();
   float getLeft() const;
   float getRight() const;
-  bool gotLandmineOnLeft() const;
-  bool gotLandmineOnRight() const;
+  void setThreshold(double threshold);
+  bool isHighCoilSignalOnLeft() const;
+  bool isHighCoilSignalOnRight() const;
   metal_detector_msgs::Coil to_msg() const;
   std::string str() const;
   const char* c_str() const;
   void operator=(const metal_detector_msgs::Coil::ConstPtr& msg);
   void operator=(const metal_detector_msgs::Coil& msg);
+  const static double THRESHOLD;
 
 private:
   float left_;
   float right_;
-  const static float THRESHOLD;
+  double threshold_;
 };
 }
 

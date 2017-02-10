@@ -40,13 +40,21 @@ CoveredAreaLayer::~CoveredAreaLayer()
 void CoveredAreaLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_);
+  rolling_window_ = layered_costmap_->isRolling();
+  global_frame_ = layered_costmap_->getGlobalFrameID();
+  int default_value;
+  nh.param("default_value", default_value, DEFAULT_VALUE);
+  default_value_ = default_value < 0 || default_value > 255
+                       ? DEFAULT_VALUE
+                       : (unsigned char)default_value;
+  ROS_INFO("    Covered Area default cost value: %d", default_value);
+  nh.param("radius", radius_, DETECTION_RADIUS);
+  ROS_INFO("    Detection radius : %lf", radius_);
   current_ = true;
-  default_value_ = costmap_2d::NO_INFORMATION;
   matchSize();
-
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
-      cb = boost::bind(&CoveredAreaLayer::reconfigureCB, this, _1, _2);
+      cb = boost::bind(&CoveredAreaLayer::reconfigureCallback, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
@@ -62,12 +70,23 @@ void CoveredAreaLayer::matchSize()
 }
 
 /**
- * @brief CoveredAreaLayer::reconfigureCB
+ * @brief CoveredAreaLayer::reset
+ */
+void CoveredAreaLayer::reset()
+{
+  deactivate();
+  resetMaps();
+  current_ = true;
+  activate();
+}
+
+/**
+ * @brief CoveredAreaLayer::reconfigureCallback
  * @param config
  * @param level
  */
-void CoveredAreaLayer::reconfigureCB(costmap_2d::GenericPluginConfig& config,
-                                     uint32_t level)
+void CoveredAreaLayer::reconfigureCallback(
+    costmap_2d::GenericPluginConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
 }
@@ -86,11 +105,17 @@ void CoveredAreaLayer::updateBounds(double robot_x, double robot_y,
                                     double robot_yaw, double* min_x,
                                     double* min_y, double* max_x, double* max_y)
 {
+  if (rolling_window_)
+  {
+    updateOrigin(robot_x - getSizeInMetersX() / 2,
+                 robot_y - getSizeInMetersY() / 2);
+  }
   if (!enabled_)
   {
     return;
   }
-  double mark_x = robot_x + cos(robot_yaw), mark_y = robot_y + sin(robot_yaw);
+  useExtraBounds(min_x, min_y, max_x, max_y);
+  /*double mark_x = robot_x + cos(robot_yaw), mark_y = robot_y + sin(robot_yaw);
   unsigned int mx;
   unsigned int my;
   if (worldToMap(mark_x, mark_y, mx, my))
@@ -100,7 +125,7 @@ void CoveredAreaLayer::updateBounds(double robot_x, double robot_y,
   *min_x = std::min(*min_x, mark_x);
   *min_y = std::min(*min_y, mark_y);
   *max_x = std::max(*max_x, mark_x);
-  *max_y = std::max(*max_y, mark_y);
+  *max_y = std::max(*max_y, mark_y);*/
 }
 
 /**
@@ -123,11 +148,10 @@ void CoveredAreaLayer::updateCosts(costmap_2d::Costmap2D& master_grid,
     for (int i = min_i; i < max_i; i++)
     {
       int index = getIndex(i, j);
-      if (costmap_[index] == costmap_2d::NO_INFORMATION)
+      if (costmap_[index] == default_value_)
       {
-        continue;
+        master_grid.setCost(i, j, costmap_[index]);
       }
-      master_grid.setCost(i, j, costmap_[index]);
     }
   }
 }

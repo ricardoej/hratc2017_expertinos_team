@@ -6,6 +6,7 @@
  *  Created on: 30/01/2017
  *  Modified on: 01/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
+ *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 

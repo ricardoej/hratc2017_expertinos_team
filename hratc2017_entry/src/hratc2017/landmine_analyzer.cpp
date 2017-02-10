@@ -6,6 +6,7 @@
  *  Created on: 30/01/2017
  *  Modified on: 01/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
+ *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -25,8 +26,9 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ros::NodeHandle pnh("~");
   pnh.param("threshold", threshold_, COIL_SIGNAL_THRESHOLD);
   ROS_INFO("   Coil signal threshold: %lf", threshold_);
-  pnh.param("sampling_end_interval", sampling_end_interval_, SAMPLING_END_INTERVAL);
-  ROS_INFO("   Sampling end interval: %f seconds", sampling_end_interval_);
+  pnh.param("sampling_end_interval", sampling_end_interval_,
+            SAMPLING_END_INTERVAL);
+  ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
   coils_sub_ =
       nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
   set_mine_pub_ =
@@ -54,14 +56,36 @@ LandmineAnalyzer::~LandmineAnalyzer()
  */
 void LandmineAnalyzer::controlLoop()
 {
-  // temporary!!!
-  if (coils_.gotLandmineOnLeft())
+  if (!coils_.isHighCoilSignalOnLeft() && !coils_.isHighCoilSignalOnRight())
   {
-    landmineDetected(true);
+    if (!sampling_)
+    {
+      return;
+    }
+    double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
+    if (elapsed_time > sampling_end_interval_)
+    {
+      ROS_INFO("CÁLCULOS");
+      reset();
+    }
   }
-  else if (coils_.gotLandmineOnRight())
+  sampling_ = true;
+  landmine_.header.stamp = ros::Time::now();
+  geometry_msgs::PoseStamped coil_pose;
+  geometry_msgs::Point32 p;
+  if (coils_.isHighCoilSignalOnLeft())
   {
-    landmineDetected(false);
+    coil_pose = getLeftCoilPose();
+    p.x = coil_pose.pose.position.x;
+    p.y = coil_pose.pose.position.y;
+    landmine_.polygon.points.push_back(p);
+  }
+  if (coils_.isHighCoilSignalOnRight())
+  {
+    coil_pose = getRightCoilPose();
+    p.x = coil_pose.pose.position.x;
+    p.y = coil_pose.pose.position.y;
+    landmine_.polygon.points.push_back(p);
   }
 }
 
@@ -102,43 +126,7 @@ void LandmineAnalyzer::coilsCallback(
     const metal_detector_msgs::Coil::ConstPtr& msg)
 {
   coils_ = msg;
-  ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
-
-  if(coils_.getLeft() < threshold_ && coils_.getRight() < threshold_)
-  {
-    if(!sampling_)
-      return;
-
-    double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
-
-    if (elapsed_time > sampling_end_interval_)
-    {
-      ROS_INFO("CÁLCULOS");
-      reset();
-    }
-  }
-  sampling_ = true;
-
-  landmine_.header.stamp = ros::Time::now();
-
-  geometry_msgs::PoseStamped coil_pose;
-
-  geometry_msgs::Point32 p;
-
-  if(coils_.getLeft() >= threshold_)
-  {
-    coil_pose = getLeftCoilPose();
-    p.x = coil_pose.pose.position.x;
-    p.y = coil_pose.pose.position.y;
-    landmine_.polygon.points.push_back(p);
-  }
-
-  if(coils_.getRight() >= threshold_)
-  {
-    coil_pose = getRightCoilPose();
-    p.x = coil_pose.pose.position.x;
-    p.y = coil_pose.pose.position.y;
-    landmine_.polygon.points.push_back(p);  }
+  //ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
 }
 
 /**
@@ -194,8 +182,8 @@ geometry_msgs::PoseStamped LandmineAnalyzer::getCoilPose(bool left_coil) const
   geometry_msgs::PoseStamped robot_pose(LandmineAnalyzer::getRobotPose());
   tf::Transform robot_transform;
   robot_transform.setOrigin(tf::Vector3(robot_pose.pose.position.x,
-                                       robot_pose.pose.position.y,
-                                       robot_pose.pose.position.z));
+                                        robot_pose.pose.position.y,
+                                        robot_pose.pose.position.z));
   tf::Quaternion q;
   quaternionMsgToTF(robot_pose.pose.orientation, q);
   robot_transform.setRotation(q);
@@ -215,8 +203,7 @@ geometry_msgs::PoseStamped LandmineAnalyzer::getCoilPose(bool left_coil) const
  * @param robot_pose
  * @return
  */
-geometry_msgs::PoseStamped
-LandmineAnalyzer::getLeftCoilPose() const
+geometry_msgs::PoseStamped LandmineAnalyzer::getLeftCoilPose() const
 {
   return getCoilPose(true);
 }
@@ -226,8 +213,7 @@ LandmineAnalyzer::getLeftCoilPose() const
  * @param robot_pose
  * @return
  */
-geometry_msgs::PoseStamped
-LandmineAnalyzer::getRightCoilPose() const
+geometry_msgs::PoseStamped LandmineAnalyzer::getRightCoilPose() const
 {
   return getCoilPose(false);
 }

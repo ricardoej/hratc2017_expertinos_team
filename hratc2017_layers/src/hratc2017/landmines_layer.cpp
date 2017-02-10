@@ -48,35 +48,29 @@ LandminesLayer::~LandminesLayer()
 void LandminesLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_);
-
   nh.param("radius", radius_, 0.15);
   ROS_INFO("    Landmine radius: %lf", radius_);
-
   nh.param("num_parts", num_parts_, 12);
   ROS_INFO("    Number of parts of landmine circumference: %d", num_parts_);
-
   std::string source;
   nh.param("topic", source, std::string("/HRATC_FW/set_mine"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
-
   current_ = true;
-
   landmines_sub_ =
       nh.subscribe(source, 10, &LandminesLayer::landminesCallback, this);
-
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
-      cb = boost::bind(&LandminesLayer::reconfigureCB, this, _1, _2);
+      cb = boost::bind(&LandminesLayer::reconfigureCallback, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
 /**
- * @brief LandminesLayer::reconfigureCB
+ * @brief LandminesLayer::reconfigureCallback
  * @param config
  * @param level
  */
-void LandminesLayer::reconfigureCB(costmap_2d::GenericPluginConfig& config,
-                                   uint32_t level)
+void LandminesLayer::reconfigureCallback(
+    costmap_2d::GenericPluginConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
 }

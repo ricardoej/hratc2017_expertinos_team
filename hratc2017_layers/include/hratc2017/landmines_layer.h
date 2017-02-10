@@ -34,7 +34,8 @@ public:
                            int min_j, int max_i, int max_j);
 
 private:
-  void reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level);
+  void reconfigureCallback(costmap_2d::GenericPluginConfig& config,
+                           uint32_t level);
   void landminesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
   ros::Subscriber landmines_sub_;

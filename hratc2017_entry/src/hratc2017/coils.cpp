@@ -14,21 +14,21 @@
 namespace hratc2017
 {
 
-const float Coils::THRESHOLD = 0.65f;
+const double Coils::THRESHOLD = 0.65f;
 
 /**
  * @brief Coils::Coils
  * @param left
  * @param right
  */
-Coils::Coils(float left, float right) : left_(left), right_(right) {}
+Coils::Coils(double threshold, float left, float right) : left_(left), right_(right), threshold_(threshold) {}
 
 /**
  * @brief Coils::Coils
  * @param msg
  */
-Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg)
-    : left_(msg->left_coil), right_(msg->right_coil)
+Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold)
+    : left_(msg->left_coil), right_(msg->right_coil), threshold_(threshold)
 {
 }
 
@@ -36,8 +36,8 @@ Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg)
  * @brief Coils::Coils
  * @param msg
  */
-Coils::Coils(const metal_detector_msgs::Coil& msg)
-    : left_(msg.left_coil), right_(msg.right_coil)
+Coils::Coils(const metal_detector_msgs::Coil& msg, double threshold)
+    : left_(msg.left_coil), right_(msg.right_coil), threshold_(threshold)
 {
 }
 
@@ -59,23 +59,30 @@ float Coils::getLeft() const { return left_; }
 float Coils::getRight() const { return right_; }
 
 /**
+ * @brief Coils::setThreshold
+ * @param threshold
+ */
+void Coils::setThreshold(double threshold)
+{
+  threshold_ = threshold < 0 || threshold > 1.0 ? Coils::THRESHOLD : threshold;
+}
+
+/**
  * @brief Coils::gotLandmineOnLeft
  * @return
  */
-bool Coils::gotLandmineOnLeft() const
+bool Coils::isHighCoilSignalOnLeft() const
 {
-  ///not implemented yet!!!
-  return left_ >= THRESHOLD;
+  return left_ >= threshold_;
 }
 
 /**
  * @brief Coils::gotLandmineOnRight
  * @return
  */
-bool Coils::gotLandmineOnRight() const
+bool Coils::isHighCoilSignalOnRight() const
 {
-  ///not implemented yet!!!
-  return right_ >= THRESHOLD;
+  return right_ >= threshold_;
 }
 
 /**
