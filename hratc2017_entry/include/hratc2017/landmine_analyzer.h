@@ -48,7 +48,6 @@ private:
   geometry_msgs::PoseStamped getLeftCoilPose() const;
   geometry_msgs::PoseStamped getRightCoilPose() const;
   geometry_msgs::PolygonStamped landmine_;
-  double threshold_;
   void reset();
   bool sampling_;
   double sampling_end_interval_;

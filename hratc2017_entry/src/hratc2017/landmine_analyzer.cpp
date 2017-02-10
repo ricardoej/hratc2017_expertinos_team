@@ -24,8 +24,10 @@ namespace hratc2017
 LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
 {
   ros::NodeHandle pnh("~");
-  pnh.param("threshold", threshold_, COIL_SIGNAL_THRESHOLD);
-  ROS_INFO("   Coil signal threshold: %lf", threshold_);
+  double threshold;
+  pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
+  coils_.setThreshold(threshold);
+  ROS_INFO("   Coil signal threshold: %lf", threshold);
   pnh.param("sampling_end_interval", sampling_end_interval_,
             SAMPLING_END_INTERVAL);
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
@@ -66,6 +68,9 @@ void LandmineAnalyzer::controlLoop()
     if (elapsed_time > sampling_end_interval_)
     {
       ROS_INFO("CÁLCULOS");
+      // calcula area
+      // valida area
+      // se area valida: calcula centroide e publica posicao da mina
       reset();
     }
   }
