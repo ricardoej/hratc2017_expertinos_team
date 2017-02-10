@@ -77,6 +77,7 @@ private:
   double safe_coil_signal_;
   double threshold_;
   bool paused_;
+  void setPause(bool paused = true);
 };
 }
 
