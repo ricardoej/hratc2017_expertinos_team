@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+        <node name="metal_scanner" pkg="hratc2017_entry" type="metal_scanner_node" output="screen">
+        </node>
+</launch>
