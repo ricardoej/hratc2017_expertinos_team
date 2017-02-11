@@ -62,6 +62,7 @@ private:
   StateEnum setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
+  void setPause(bool paused);
   Coils coils_;
   void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
   void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);

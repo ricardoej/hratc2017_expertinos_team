@@ -119,7 +119,7 @@ StateEnum MetalScanner::setNextState()
       setVelocity(0, 0);
       ROS_INFO("   S5 - State change!");
       current_state_ = states::S0_SETTING_UP;
-      setPause();
+      setPause(paused_);
     }
     break;
   }
