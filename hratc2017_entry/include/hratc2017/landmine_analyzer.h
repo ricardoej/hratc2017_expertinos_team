@@ -49,6 +49,7 @@ private:
   geometry_msgs::PoseStamped getCoilPose(bool left_coil = true) const;
   geometry_msgs::PoseStamped getLeftCoilPose() const;
   geometry_msgs::PoseStamped getRightCoilPose() const;
+  void publishLandminePose(double x, double y) const;
   geometry_msgs::PolygonStamped landmine_;
   void reset();
   bool sampling_;

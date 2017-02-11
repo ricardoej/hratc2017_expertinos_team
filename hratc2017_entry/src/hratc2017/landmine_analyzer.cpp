@@ -84,6 +84,7 @@ void LandmineAnalyzer::controlLoop()
       p_max_.y = (p_max_left_.y + p_max_right_.y)/2;
 
       ROS_INFO("Possível local da mina: [%f, %f]", p_max_.x, p_max_.y);
+      publishLandminePose(p_max_.x, p_max_.y);
 
       ROS_INFO("CÁLCULOS");
       // calcula area
@@ -254,6 +255,18 @@ geometry_msgs::PoseStamped LandmineAnalyzer::getLeftCoilPose() const
 geometry_msgs::PoseStamped LandmineAnalyzer::getRightCoilPose() const
 {
   return getCoilPose(false);
+}
+
+void LandmineAnalyzer::publishLandminePose(double x, double y) const
+{
+  geometry_msgs::PoseStamped msg;
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "minefield";
+  msg.pose.position.x = x;
+  msg.pose.position.y = y;
+  msg.pose.position.z = 0.0;
+  msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  set_mine_pub_.publish(msg);
 }
 
 void LandmineAnalyzer::reset()
