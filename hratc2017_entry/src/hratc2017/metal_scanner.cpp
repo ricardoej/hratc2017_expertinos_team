@@ -118,8 +118,8 @@ StateEnum MetalScanner::setNextState()
   case states::S5_MOVING_AWAY:
     if(coils_.getLeft() < safe_coil_signal_ && coils_.getRight() < safe_coil_signal_)
     {
-      ROS_INFO("   S5 - Waiting safe time!");
-      ros::Duration(safe_time_).sleep();
+      /*ROS_INFO("   S5 - Waiting safe time!");
+      ros::Duration(safe_time_).sleep();*/
       setVelocity(0, 0);
       ROS_INFO("   S5 - State change!");
       current_state_ = states::S0_SETTING_UP;

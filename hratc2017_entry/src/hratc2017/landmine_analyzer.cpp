@@ -28,16 +28,11 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
   coils_.setThreshold(threshold);
   ROS_INFO("   Coil signal threshold: %lf", threshold);
-
   pnh.param("max_coil_signal", max_coil_singal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
-
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
   ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
-
-
-  pnh.param("sampling_end_interval", sampling_end_interval_,
-            SAMPLING_END_INTERVAL);
+  pnh.param("sampling_end_interval", sampling_end_interval_, SAMPLING_END_INTERVAL);
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
   coils_sub_ =
       nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
@@ -72,27 +67,63 @@ void LandmineAnalyzer::controlLoop()
     {
       return;
     }
-
     double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
-    ROS_INFO("atual %f", ros::Time::now().toSec());
-    ROS_INFO("stamp %f", landmine_.header.stamp.toSec());
-    ROS_INFO("elapsed_time %f", elapsed_time);
-
     if (elapsed_time > sampling_end_interval_)
     {
-      p_max_.x = (p_max_left_.x + p_max_right_.x)/2;
-      p_max_.y = (p_max_left_.y + p_max_right_.y)/2;
-
+      float min_x;
+      float min_y;
+      float max_x;
+      float max_y;
+      min_x = landmine_.polygon.points[0].x;
+      max_x = landmine_.polygon.points[0].x;
+      min_y = landmine_.polygon.points[0].y;
+      max_y = landmine_.polygon.points[0].y;
+      for(int i = 0; i < landmine_.polygon.points.size(); i ++)
+      {
+        if(min_x > landmine_.polygon.points[i].x)
+          min_x = landmine_.polygon.points[i].x;
+        if(max_x < landmine_.polygon.points[i].x)
+          max_x = landmine_.polygon.points[i].x;
+        if(min_y > landmine_.polygon.points[i].y)
+          min_y = landmine_.polygon.points[i].y;
+        if(max_y < landmine_.polygon.points[i].y)
+          max_y = landmine_.polygon.points[i].y;
+      }
+      geometry_msgs::Point32 vertex[4];
+      for(int i = 0; i < landmine_.polygon.points.size(); i ++)
+      {
+        if(min_x == landmine_.polygon.points[i].x)
+          vertex[0] = landmine_.polygon.points[i];
+        if(max_x == landmine_.polygon.points[i].x)
+          vertex[1] = landmine_.polygon.points[i];
+        if(min_y == landmine_.polygon.points[i].y)
+          vertex[2] = landmine_.polygon.points[i];
+        if(max_y == landmine_.polygon.points[i].y)
+          vertex[3] = landmine_.polygon.points[i];
+      }
+      float area = 0;
+      for(int i = 0; i < 3; i ++)
+      {
+        area = area + (vertex[i].x * vertex[i + 1].y - vertex[i].y * vertex[i + 1].x);
+      }
+      ROS_INFO("min_X = [%f, %f]", vertex[0].x, vertex[0].y);
+      ROS_INFO("max_X = [%f, %f]", vertex[1].x, vertex[1].y);
+      ROS_INFO("min_Y = [%f, %f]", vertex[2].x, vertex[2].y);
+      ROS_INFO("min_Y = [%f, %f]", vertex[3].x, vertex[3].y);
+      ROS_INFO("area = [%f]", area);
+      p_max_.x = (p_max_left_.x + p_max_right_.x) / 2;
+      p_max_.y = (p_max_left_.y + p_max_right_.y) / 2;
       ROS_INFO("Possível local da mina: [%f, %f]", p_max_.x, p_max_.y);
       publishLandminePose(p_max_.x, p_max_.y);
 
-      ROS_INFO("CÁLCULOS");
       // calcula area
       // valida area
       // se area valida: calcula centroide e publica posicao da mina
       reset();
     }
-  }else{
+  }
+  else
+  {
     sampling_ = true;
     landmine_.header.stamp = ros::Time::now();
   }
@@ -115,14 +146,13 @@ void LandmineAnalyzer::controlLoop()
     landmine_.polygon.points.push_back(p);
   }
 
-  if(coils_.getLeft()> max_coil_singal_ && coils_.getLeft()> max_coil_singal_){
+  if(coils_.getLeft() >= max_coil_singal_ && coils_.getLeft() >= max_coil_singal_)
+  {
     p_max_left_.x = getLeftCoilPose().pose.position.x;
     p_max_left_.y = getLeftCoilPose().pose.position.y;
 
     p_max_right_.x = getRightCoilPose().pose.position.x;
     p_max_right_.y = getRightCoilPose().pose.position.y;
-
- //   ROS_INFO("Possível : [%f, %f]", p_max.x, p_max.y);
   }
 
 
