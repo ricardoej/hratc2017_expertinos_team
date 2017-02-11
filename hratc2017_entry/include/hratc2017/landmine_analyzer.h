@@ -23,6 +23,8 @@
 
 #define COIL_SIGNAL_THRESHOLD 0.6
 #define SAMPLING_END_INTERVAL 2.0
+#define MAX_COIL_SIGNAL 0.9
+#define ALIGNMENT_TOLERANCE 0.04
 
 namespace hratc2017
 {
@@ -51,6 +53,11 @@ private:
   void reset();
   bool sampling_;
   double sampling_end_interval_;
+  double max_coil_singal_;
+  double alignment_tolerance_;
+  geometry_msgs::Point32 p_max_left_;
+  geometry_msgs::Point32 p_max_right_;
+  geometry_msgs::Point32 p_max_;
 };
 }
 

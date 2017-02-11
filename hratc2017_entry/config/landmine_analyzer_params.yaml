@@ -1,2 +1,4 @@
 threshold: 0.5
 sampling_end_interval: 3.0
+max_coil_signal: 0.9
+alignment_tolerance: 0.04

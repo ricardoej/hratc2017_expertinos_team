@@ -28,6 +28,14 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
   coils_.setThreshold(threshold);
   ROS_INFO("   Coil signal threshold: %lf", threshold);
+
+  pnh.param("max_coil_signal", max_coil_singal_, MAX_COIL_SIGNAL);
+  ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
+
+  pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
+  ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
+
+
   pnh.param("sampling_end_interval", sampling_end_interval_,
             SAMPLING_END_INTERVAL);
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
@@ -64,18 +72,30 @@ void LandmineAnalyzer::controlLoop()
     {
       return;
     }
+
     double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
+    ROS_INFO("atual %f", ros::Time::now().toSec());
+    ROS_INFO("stamp %f", landmine_.header.stamp.toSec());
+    ROS_INFO("elapsed_time %f", elapsed_time);
+
     if (elapsed_time > sampling_end_interval_)
     {
+      p_max_.x = (p_max_left_.x + p_max_right_.x)/2;
+      p_max_.y = (p_max_left_.y + p_max_right_.y)/2;
+
+      ROS_INFO("Possível local da mina: [%f, %f]", p_max_.x, p_max_.y);
+
       ROS_INFO("CÁLCULOS");
       // calcula area
       // valida area
       // se area valida: calcula centroide e publica posicao da mina
       reset();
     }
+  }else{
+    sampling_ = true;
+    landmine_.header.stamp = ros::Time::now();
   }
-  sampling_ = true;
-  landmine_.header.stamp = ros::Time::now();
+
   geometry_msgs::PoseStamped coil_pose;
   geometry_msgs::Point32 p;
   if (coils_.isHighCoilSignalOnLeft())
@@ -85,6 +105,7 @@ void LandmineAnalyzer::controlLoop()
     p.y = coil_pose.pose.position.y;
     landmine_.polygon.points.push_back(p);
   }
+
   if (coils_.isHighCoilSignalOnRight())
   {
     coil_pose = getRightCoilPose();
@@ -92,6 +113,18 @@ void LandmineAnalyzer::controlLoop()
     p.y = coil_pose.pose.position.y;
     landmine_.polygon.points.push_back(p);
   }
+
+  if(coils_.getLeft()> max_coil_singal_ && coils_.getLeft()> max_coil_singal_){
+    p_max_left_.x = getLeftCoilPose().pose.position.x;
+    p_max_left_.y = getLeftCoilPose().pose.position.y;
+
+    p_max_right_.x = getRightCoilPose().pose.position.x;
+    p_max_right_.y = getRightCoilPose().pose.position.y;
+
+ //   ROS_INFO("Possível : [%f, %f]", p_max.x, p_max.y);
+  }
+
+
 }
 
 /**
