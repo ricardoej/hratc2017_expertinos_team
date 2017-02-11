@@ -28,6 +28,7 @@
 #define COIL_SIGNAL_TOLERANCE 0.01
 #define SAFE_COIL_SIGNAL 0.35
 #define THRESHOLD 0.5
+#define SAFE_TIME 2.0
 
 namespace hratc2017
 {
@@ -77,6 +78,7 @@ private:
   double coil_signal_tolerance_;
   double safe_coil_signal_;
   double threshold_;
+  double safe_time_;
   bool paused_;
 };
 }

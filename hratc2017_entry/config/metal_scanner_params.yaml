@@ -7,3 +7,4 @@ coil_signal_increment: 0.1
 coil_signal_tolerance: 0.01
 safe_coil_signal: 0.35
 threshold: 0.5
+safe_time: 2.0
