@@ -37,10 +37,18 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
   pnh.param("minimal_signal_radius", min_signal_radius_, MIN_SIGNAL_RADIUS);
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
+  pnh.param("minimal_signal_radius", min_signal_radius_, MAX_SIGNAL_RADIUS);
+  ROS_INFO("   Max signal radius: %f", max_signal_radius_);
   coils_sub_ =
       nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
+  set_fake_mine_pub_ =
+      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 1);
   set_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 1);
+  polygon_pub_ =
+      nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 10);
+pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+
   EMPTY_POSE.header.frame_id = "UNDEF";
   EMPTY_POSE.pose.position.x = 0;
   EMPTY_POSE.pose.position.y = 0;
@@ -57,6 +65,9 @@ LandmineAnalyzer::~LandmineAnalyzer()
 {
   coils_sub_.shutdown();
   set_mine_pub_.shutdown();
+  set_fake_mine_pub_.shutdown();
+  polygon_pub_.shutdown();
+  pause_pub_.shutdown();
 }
 
 /**
@@ -78,18 +89,37 @@ void LandmineAnalyzer::controlLoop()
       ROS_INFO("   Possivel local da mina: [%f, %f]", mine_center_.x, mine_center_.y);
       float radius(sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) + pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
       ROS_INFO("   Signal radius = %f [meters]", radius);
-//      float area(M_PI * pow(radius, 2));
-//      ROS_INFO("   Signal area = %f [square meters]", area);
-      if(radius >= min_signal_radius_ && possible_mine_found_)
-        publishLandminePose(mine_center_.x, mine_center_.y);
+      float area(M_PI * pow(radius, 2));
+      ROS_INFO("   Signal area = %f [square meters]", area);
+      if(possible_mine_found_ && radius >= min_signal_radius_ && radius <= max_signal_radius_)
+      {
+          publishLandminePose(mine_center_.x, mine_center_.y);
+          ROS_INFO("MINA REAL");
+      }else{
+        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
+        ROS_INFO("MINA FALSA");
+      }
       reset();
+//      if(possible_mine_found_ && radius >= min_signal_radius_)
+//      {
+//          publishLandminePose(mine_center_.x, mine_center_.y);
+//          ROS_INFO("MINA REAL");
+//      }else{
+//        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
+//        ROS_INFO("MINA FALSA");
+//      }
+//      reset();
+
     }
+    return;
   }
-  else
+  if(!sampling_)
   {
     sampling_ = true;
-    landmine_.header.stamp = ros::Time::now();
+    setScanning(true);
+
   }
+  landmine_.header.stamp = ros::Time::now();
 
   geometry_msgs::PoseStamped coil_pose;
   geometry_msgs::Point32 p;
@@ -120,6 +150,7 @@ void LandmineAnalyzer::controlLoop()
 
     possible_mine_found_ = true;
   }
+  polygon_pub_.publish(landmine_);
 }
 
 /**
@@ -263,10 +294,32 @@ void LandmineAnalyzer::publishLandminePose(double x, double y) const
   set_mine_pub_.publish(msg);
 }
 
+void LandmineAnalyzer::publishFakeLandminePose(double x, double y, double radius) const{
+  geometry_msgs::PoseStamped msg;
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "minefield";
+  msg.pose.position.x = x;
+  msg.pose.position.y = y;
+  msg.pose.position.z = radius;
+  msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  set_fake_mine_pub_.publish(msg);
+}
+
+void LandmineAnalyzer::setScanning(bool scanning)
+{
+  std_msgs::Bool msg;
+  msg.data = !scanning;
+  pause_pub_.publish(msg);
+}
+
 void LandmineAnalyzer::reset()
 {
   landmine_ = geometry_msgs::PolygonStamped();
+  landmine_.header.frame_id = "minefield";
   sampling_ = false;
   possible_mine_found_ = false;
+  setScanning(false);
 }
+
+
 }

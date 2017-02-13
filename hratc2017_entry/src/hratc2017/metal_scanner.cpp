@@ -48,7 +48,6 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Safe_time %f", safe_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &MetalScanner::coilsCallback, this);
-  pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
   pause_sub_ =
       nh->subscribe("pause_scanning", 1, &MetalScanner::pauseCallback, this);
 }
@@ -60,7 +59,6 @@ MetalScanner::~MetalScanner()
 {
   cmd_vel_pub_.shutdown();
   coils_sub_.shutdown();
-  pause_pub_.shutdown();
   pause_sub_.shutdown();
 }
 
@@ -72,10 +70,7 @@ void MetalScanner::controlLoop()
   if (paused_)
   {
     ROS_DEBUG("   Paused!!!");
-    if (coils_.isHighCoilSignalOnLeft() || coils_.isHighCoilSignalOnRight())
-    {
-      setPause(false);
-    }
+
     return;
   }
   setNextState();
@@ -131,8 +126,7 @@ StateEnum MetalScanner::setNextState()
       ros::Duration(safe_time_).sleep();*/
       setVelocity(0, 0);
       ROS_INFO("   S5 - State change!");
-      current_state_ = states::S0_SETTING_UP;
-      setPause(true);
+      reset();
     }
     break;
   }
@@ -185,6 +179,9 @@ void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   paused_ = msg->data;
   ROS_INFO("   pauseCallBack: %s", paused_ ? "true" : "false");
+  if(paused_){
+    reset();
+  }
 }
 
 void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
@@ -192,11 +189,9 @@ void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
   coils_ = msg;
 }
 
-void MetalScanner::setPause(bool paused)
+void MetalScanner::reset()
 {
-  std_msgs::Bool msg;
-  msg.data = paused;
-  pause_pub_.publish(msg);
-  paused_ = paused;
+  paused_ = true;
+  current_state_ = states::S0_SETTING_UP;
 }
 }

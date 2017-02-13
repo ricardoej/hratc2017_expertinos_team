@@ -56,7 +56,6 @@ public:
 private:
   virtual void controlLoop();
   ros::Publisher cmd_vel_pub_;
-  ros::Publisher pause_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber pause_sub_;
   StateEnum current_state_;
@@ -77,9 +76,9 @@ private:
   StateEnum setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
-  void setPause(bool paused);
-  void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
+  void reset();
   void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
+  void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
 };
 }
 
