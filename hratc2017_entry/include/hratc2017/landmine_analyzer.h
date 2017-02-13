@@ -26,6 +26,7 @@
 #define SAMPLING_END_INTERVAL 2.0
 #define MAX_COIL_SIGNAL 0.9
 #define ALIGNMENT_TOLERANCE 0.04
+#define MIN_SIGNAL_RADIUS 0.2
 
 namespace hratc2017
 {
@@ -41,13 +42,6 @@ private:
   ros::Subscriber coils_sub_;
   ros::Publisher set_mine_pub_;
   Coils coils_;
-  bool sampling_;
-  double sampling_end_interval_;
-  double max_coil_singal_;
-  double alignment_tolerance_;
-  geometry_msgs::Point32 p_max_left_;
-  geometry_msgs::Point32 p_max_right_;
-  geometry_msgs::Point32 p_max_;
   geometry_msgs::PoseStamped EMPTY_POSE;
   virtual void controlLoop();
   void landmineDetected(bool left_coil = true) const;
@@ -60,6 +54,15 @@ private:
   void publishLandminePose(double x, double y) const;
   geometry_msgs::PolygonStamped landmine_;
   void reset();
+  bool possible_mine_found_;
+  bool sampling_;
+  double sampling_end_interval_;
+  double max_coil_singal_;
+  double alignment_tolerance_;
+  double min_signal_radius_;
+  geometry_msgs::Point32 p_max_left_;
+  geometry_msgs::Point32 p_max_right_;
+  geometry_msgs::Point32 mine_center_;
 };
 }
 
