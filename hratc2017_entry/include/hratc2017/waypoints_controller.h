@@ -15,6 +15,9 @@
 
 #include <ros/ros.h>
 #include "utilities/ros_node.h"
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
+#include "visualization_msgs/MarkerArray.h"
 
 namespace hratc2017
 {
@@ -27,6 +30,7 @@ public:
 
 private:
   virtual void controlLoop();
+  void mapBordersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
 };
 }
 
