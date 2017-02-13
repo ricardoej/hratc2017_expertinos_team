@@ -1,10 +1,20 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="_plot" default="true"/>
   <arg name="_robot" default="p3at"/>
+  <arg name="_rviz" default="true"/>
   <group ns="$(arg _robot)">
-    <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch"/>
+    <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch">
+      <arg name ="_plot" value="$(arg _plot)"/>
+    </include>
+    <include file="$(find hratc2017_entry)/launch/metal_scanner.launch"/>
     <include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>
+    <node name="twist_mux" pkg="twist_mux" type="twist_mux" output="screen">
+      <rosparam file="$(find hratc2017_entry)/config/twist_mux_params.yaml" command="load"/>
+      <remap from="cmd_vel_out" to="cmd_vel"/>
+    </node>
   </group>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
+    <arg name ="_rviz" value="$(arg _rviz)"/>
   </include>
 </launch>

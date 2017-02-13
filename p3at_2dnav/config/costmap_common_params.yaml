@@ -1,6 +1,6 @@
 obstacle_range: 2.0       # determines the maximum range sensor reading that will result in an obstacle being put into the costmap.
 raytrace_range: 3.0       # determines the range to which we will raytrace freespace given a sensor reading.
-inflation_radius: 0.35    # should be set to the maximum distance from obstacles at which a cost should be incurred.
+inflation_radius: 0.7     # should be set to the maximum distance from obstacles at which a cost should be incurred.
 
 #---standard pioneer footprint---
 #---(in inches)---
@@ -25,9 +25,9 @@ map_type: costmap
 
 plugins:
 - {name: static_layer, type: 'costmap_2d::StaticLayer'}
-#- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
-- {name: inflation_layer, type: 'costmap_2d::InflationLayer'}
+- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
 - {name: landmines_layer, type: 'hratc2017::LandminesLayer'}
+- {name: inflation_layer, type: 'costmap_2d::InflationLayer'}
 #- {name: covered_area_layer, type: 'hratc2017::CoveredAreaLayer'}
 
 observation_sources: laser_scan_sensor      # defines a list of sensors that are going to be passing information to the costmap separated by spaces.

@@ -1,0 +1,7 @@
+landmines_layer:
+  num_parts: 18
+  radius: 0.25
+  topic: '/HRATC_FW/set_mine'
+
+covered_area_layer:
+  default_value: 128          # in range of [0, 255]

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-        <node name="landmine_analyzer" pkg="hratc2017_entry" type="landmine_analyzer_node" output="screen">
-        </node>
+  <arg name="_plot" default="true"/>
+  <node name="landmine_analyzer" pkg="hratc2017_entry" type="landmine_analyzer_node" output="screen">
+    <rosparam file="$(find hratc2017_entry)/config/landmine_analyzer_params.yaml" command="load"/>
+  </node>
+  <node name="coil_signals_plot" pkg="rqt_plot" type="rqt_plot" args="/coils" if="$(arg _plot)"/>
 </launch>

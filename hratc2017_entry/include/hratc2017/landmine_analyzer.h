@@ -4,8 +4,10 @@
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
+ *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
+ *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -15,9 +17,15 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include "utilities/ros_node.h"
 #include "hratc2017/coils.h"
+
+#define COIL_SIGNAL_THRESHOLD 0.6
+#define SAMPLING_END_INTERVAL 2.0
+#define MAX_COIL_SIGNAL 0.9
+#define ALIGNMENT_TOLERANCE 0.04
 
 namespace hratc2017
 {
@@ -33,6 +41,13 @@ private:
   ros::Subscriber coils_sub_;
   ros::Publisher set_mine_pub_;
   Coils coils_;
+  bool sampling_;
+  double sampling_end_interval_;
+  double max_coil_singal_;
+  double alignment_tolerance_;
+  geometry_msgs::Point32 p_max_left_;
+  geometry_msgs::Point32 p_max_right_;
+  geometry_msgs::Point32 p_max_;
   geometry_msgs::PoseStamped EMPTY_POSE;
   virtual void controlLoop();
   void landmineDetected(bool left_coil = true) const;
@@ -42,6 +57,9 @@ private:
   geometry_msgs::PoseStamped getCoilPose(bool left_coil = true) const;
   geometry_msgs::PoseStamped getLeftCoilPose() const;
   geometry_msgs::PoseStamped getRightCoilPose() const;
+  void publishLandminePose(double x, double y) const;
+  geometry_msgs::PolygonStamped landmine_;
+  void reset();
 };
 }
 

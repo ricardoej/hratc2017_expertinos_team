@@ -2,9 +2,9 @@
  *  This source file implements the LandminesLayer class, which is based
  *on the constmap_2d::Layer class.
  *
- *  Version: 0.0.2
+ *  Version: 0.0.3
  *  Created on: 01/02/2017
- *  Modified on: 03/02/2017
+ *  Modified on: 08/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -20,14 +20,21 @@ namespace hratc2017
 /**
  * @brief LandminesLayer::LandminesLayer
  */
-LandminesLayer::LandminesLayer() : dsrv_(NULL), radius_(0.5) {}
+LandminesLayer::LandminesLayer()
+    : dsrv_(NULL), radius_(0.5), num_parts_(12),
+      min_x_(std::numeric_limits<float>::max()),
+      min_y_(std::numeric_limits<float>::max()),
+      max_x_(-std::numeric_limits<float>::max()),
+      max_y_(-std::numeric_limits<float>::max())
+{
+}
 
 /**
  * @brief LandminesLayer::~LandminesLayer
  */
 LandminesLayer::~LandminesLayer()
 {
-  set_mine_sub_.shutdown();
+  landmines_sub_.shutdown();
   if (dsrv_)
   {
     delete dsrv_;
@@ -41,31 +48,29 @@ LandminesLayer::~LandminesLayer()
 void LandminesLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_);
-
-  nh.param("radius", radius_, 0.5);
+  nh.param("radius", radius_, 0.15);
   ROS_INFO("    Landmine radius: %lf", radius_);
-
+  nh.param("num_parts", num_parts_, 12);
+  ROS_INFO("    Number of parts of landmine circumference: %d", num_parts_);
   std::string source;
   nh.param("topic", source, std::string("/HRATC_FW/set_mine"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
-
   current_ = true;
-
-  set_mine_sub_ = nh.subscribe(source, 10, &LandminesLayer::setMineCallback, this);
-
+  landmines_sub_ =
+      nh.subscribe(source, 10, &LandminesLayer::landminesCallback, this);
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
-      cb = boost::bind(&LandminesLayer::reconfigureCB, this, _1, _2);
+      cb = boost::bind(&LandminesLayer::reconfigureCallback, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
 /**
- * @brief LandminesLayer::reconfigureCB
+ * @brief LandminesLayer::reconfigureCallback
  * @param config
  * @param level
  */
-void LandminesLayer::reconfigureCB(costmap_2d::GenericPluginConfig& config,
-                                   uint32_t level)
+void LandminesLayer::reconfigureCallback(
+    costmap_2d::GenericPluginConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
 }
@@ -84,10 +89,14 @@ void LandminesLayer::updateBounds(double robot_x, double robot_y,
                                   double robot_yaw, double* min_x,
                                   double* min_y, double* max_x, double* max_y)
 {
-  /*if (!enabled_)
+  if (!enabled_ || landmines_.empty())
   {
     return;
-  }*/
+  }
+  *min_x = std::min(*min_x, min_x_);
+  *min_y = std::min(*min_y, min_y_);
+  *max_x = std::max(*max_x, max_x_);
+  *max_y = std::max(*max_y, max_y_);
 }
 
 /**
@@ -101,18 +110,38 @@ void LandminesLayer::updateBounds(double robot_x, double robot_y,
 void LandminesLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i,
                                  int min_j, int max_i, int max_j)
 {
-  if (!enabled_)
+  if (!enabled_ || landmines_.empty())
   {
     return;
   }
-  unsigned int mx;
-  unsigned int my;
-  for (int i(0); i < marks_.size(); i++)
+  if (radius_ <= 0 || num_parts_ <= 0)
   {
-    if (master_grid.worldToMap(marks_[i].x, marks_[i].y, mx, my))
+    unsigned int xc, yc;
+    for (int i(0); i < landmines_.size(); i++)
     {
-      master_grid.setCost(mx, my, costmap_2d::LETHAL_OBSTACLE);
+      if (master_grid.worldToMap(landmines_[i].x, landmines_[i].y, xc, yc))
+      {
+        master_grid.setCost(xc, yc, costmap_2d::LETHAL_OBSTACLE);
+      }
     }
+    return;
+  }
+  double angle;
+  std::vector<geometry_msgs::Point> landmine_circumference;
+  for (int i(0); i < landmines_.size(); i++)
+  {
+    angle = 0.0;
+    landmine_circumference.clear();
+    while (angle < 2 * M_PI)
+    {
+      geometry_msgs::Point p;
+      p.x = radius_ * cos(angle) + landmines_[i].x;
+      p.y = radius_ * sin(angle) + landmines_[i].y;
+      landmine_circumference.push_back(p);
+      angle += M_PI / radius_ / num_parts_;
+    }
+    master_grid.setConvexPolygonCost(landmine_circumference,
+                                     costmap_2d::LETHAL_OBSTACLE);
   }
 }
 
@@ -120,9 +149,15 @@ void LandminesLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i,
  * @brief hratc2017::LandminesLayer::setMineCallback
  * @param msg
  */
-void LandminesLayer::setMineCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+void LandminesLayer::landminesCallback(
+    const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-  ROS_INFO("Adding a new landmine at (%f, %f).", msg->pose.position.x, msg->pose.position.y);
-  marks_.push_back(msg->pose.position);
+  ROS_DEBUG("Adding a new landmine at (%f, %f).", msg->pose.position.x,
+            msg->pose.position.y);
+  min_x_ = std::min(min_x_, msg->pose.position.x - radius_);
+  min_y_ = std::min(min_y_, msg->pose.position.y - radius_);
+  max_x_ = std::max(max_x_, msg->pose.position.x + radius_);
+  max_y_ = std::max(max_y_, msg->pose.position.y + radius_);
+  landmines_.push_back(msg->pose.position);
 }
 }
