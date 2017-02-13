@@ -4,9 +4,10 @@
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
+ *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -32,7 +33,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
   ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
-  pnh.param("sampling_end_interval", sampling_end_interval_, SAMPLING_END_INTERVAL);
+  pnh.param("sampling_end_interval", sampling_end_interval_,
+            SAMPLING_END_INTERVAL);
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
   coils_sub_ =
       nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
@@ -78,33 +80,34 @@ void LandmineAnalyzer::controlLoop()
       max_x = landmine_.polygon.points[0].x;
       min_y = landmine_.polygon.points[0].y;
       max_y = landmine_.polygon.points[0].y;
-      for(int i = 0; i < landmine_.polygon.points.size(); i ++)
+      for (int i = 0; i < landmine_.polygon.points.size(); i++)
       {
-        if(min_x > landmine_.polygon.points[i].x)
+        if (min_x > landmine_.polygon.points[i].x)
           min_x = landmine_.polygon.points[i].x;
-        if(max_x < landmine_.polygon.points[i].x)
+        if (max_x < landmine_.polygon.points[i].x)
           max_x = landmine_.polygon.points[i].x;
-        if(min_y > landmine_.polygon.points[i].y)
+        if (min_y > landmine_.polygon.points[i].y)
           min_y = landmine_.polygon.points[i].y;
-        if(max_y < landmine_.polygon.points[i].y)
+        if (max_y < landmine_.polygon.points[i].y)
           max_y = landmine_.polygon.points[i].y;
       }
       geometry_msgs::Point32 vertex[4];
-      for(int i = 0; i < landmine_.polygon.points.size(); i ++)
+      for (int i = 0; i < landmine_.polygon.points.size(); i++)
       {
-        if(min_x == landmine_.polygon.points[i].x)
+        if (min_x == landmine_.polygon.points[i].x)
           vertex[0] = landmine_.polygon.points[i];
-        if(max_x == landmine_.polygon.points[i].x)
+        if (max_x == landmine_.polygon.points[i].x)
           vertex[1] = landmine_.polygon.points[i];
-        if(min_y == landmine_.polygon.points[i].y)
+        if (min_y == landmine_.polygon.points[i].y)
           vertex[2] = landmine_.polygon.points[i];
-        if(max_y == landmine_.polygon.points[i].y)
+        if (max_y == landmine_.polygon.points[i].y)
           vertex[3] = landmine_.polygon.points[i];
       }
       float area = 0;
-      for(int i = 0; i < 3; i ++)
+      for (int i = 0; i < 3; i++)
       {
-        area = area + (vertex[i].x * vertex[i + 1].y - vertex[i].y * vertex[i + 1].x);
+        area = area +
+               (vertex[i].x * vertex[i + 1].y - vertex[i].y * vertex[i + 1].x);
       }
       ROS_INFO("min_X = [%f, %f]", vertex[0].x, vertex[0].y);
       ROS_INFO("max_X = [%f, %f]", vertex[1].x, vertex[1].y);
@@ -146,7 +149,8 @@ void LandmineAnalyzer::controlLoop()
     landmine_.polygon.points.push_back(p);
   }
 
-  if(coils_.getLeft() >= max_coil_singal_ && coils_.getLeft() >= max_coil_singal_)
+  if (coils_.getLeft() >= max_coil_singal_ &&
+      coils_.getLeft() >= max_coil_singal_)
   {
     p_max_left_.x = getLeftCoilPose().pose.position.x;
     p_max_left_.y = getLeftCoilPose().pose.position.y;
@@ -154,8 +158,6 @@ void LandmineAnalyzer::controlLoop()
     p_max_right_.x = getRightCoilPose().pose.position.x;
     p_max_right_.y = getRightCoilPose().pose.position.y;
   }
-
-
 }
 
 /**
@@ -195,7 +197,7 @@ void LandmineAnalyzer::coilsCallback(
     const metal_detector_msgs::Coil::ConstPtr& msg)
 {
   coils_ = msg;
-  //ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
+  // ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
 }
 
 /**

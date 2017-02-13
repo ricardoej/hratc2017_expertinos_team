@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.1
  *  Created on: 09/02/2017
- *  Modified on: 09/02/2017
+ *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
@@ -19,7 +19,9 @@ namespace hratc2017
  * @brief MetalScanner::MetalScanner
  * @param nh
  */
-MetalScanner::MetalScanner(ros::NodeHandle* nh) : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0), paused_(true)
+MetalScanner::MetalScanner(ros::NodeHandle* nh)
+    : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
+      paused_(true)
 {
   ros::NodeHandle pnh("~");
   pnh.param("linear_velocity_x", vx_, LINEAR_VELOCITY_X);
@@ -32,9 +34,11 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh) : ROSNode(nh, 30), current_state
   ROS_INFO("   Minimum coil signal: %f", min_coil_signal_);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Maximum coil signal: %f", max_coil_signal_);
-  pnh.param("coil_signal_increment", coil_signal_increment_, COIL_SIGNAL_INCREMENT);
+  pnh.param("coil_signal_increment", coil_signal_increment_,
+            COIL_SIGNAL_INCREMENT);
   ROS_INFO("   Coil signal increment: %f", coil_signal_increment_);
-  pnh.param("coil_signal_tolerance", coil_signal_tolerance_, COIL_SIGNAL_TOLERANCE);
+  pnh.param("coil_signal_tolerance", coil_signal_tolerance_,
+            COIL_SIGNAL_TOLERANCE);
   ROS_INFO("   Coil signal tolerance: %f", coil_signal_tolerance_);
   pnh.param("safe_coil_signal", safe_coil_signal_, SAFE_COIL_SIGNAL);
   ROS_INFO("   Safe coil signal %f", safe_coil_signal_);
@@ -42,13 +46,10 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh) : ROSNode(nh, 30), current_state
   ROS_INFO("   Threshold %f", threshold_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
-  cmd_vel_pub_ =
-      nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
-  coils_sub_ =
-      nh->subscribe("/coils", 10, &MetalScanner::coilsCallback, this);
-  pause_pub_ =
-      nh->advertise<std_msgs::Bool>("pause_scanning", 1);
-  pause_sub_=
+  cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
+  coils_sub_ = nh->subscribe("/coils", 10, &MetalScanner::coilsCallback, this);
+  pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+  pause_sub_ =
       nh->subscribe("pause_scanning", 1, &MetalScanner::pauseCallback, this);
 }
 
@@ -68,9 +69,13 @@ MetalScanner::~MetalScanner()
  */
 void MetalScanner::controlLoop()
 {
-  if(paused_)
+  if (paused_)
   {
-    ROS_INFO("   Paused!!!");
+    ROS_DEBUG("   Paused!!!");
+    if (coils_.isHighCoilSignalOnLeft() || coils_.isHighCoilSignalOnRight())
+    {
+      setPause(false);
+    }
     return;
   }
   setNextState();
@@ -87,36 +92,40 @@ StateEnum MetalScanner::setNextState()
     current_state_ = states::S1_ALINGING;
     break;
   case states::S1_ALINGING:
-    if(fabs(error_) <= coil_signal_tolerance_)
+    if (fabs(error_) <= coil_signal_tolerance_)
     {
       ref_coil_signal_ += coil_signal_increment_;
       ROS_INFO("   S1 - State change!");
-      current_state_ = ref_coil_signal_ <= max_coil_signal_ ? states::S2_SCANNING_FOWARD : states::S5_MOVING_AWAY;
+      current_state_ = ref_coil_signal_ <= max_coil_signal_
+                           ? states::S2_SCANNING_FOWARD
+                           : states::S5_MOVING_AWAY;
     }
     break;
   case states::S2_SCANNING_FOWARD:
-    if(coils_.getLeft() >= ref_coil_signal_ || coils_.getRight() >= ref_coil_signal_)
+    if (coils_.getLeft() >= ref_coil_signal_ ||
+        coils_.getRight() >= ref_coil_signal_)
     {
       ROS_INFO("   S2 - State change!");
       current_state_ = states::S3_SCANNING_LEFT;
     }
     break;
   case states::S3_SCANNING_LEFT:
-    if(coils_.getLeft() <= threshold_)
+    if (coils_.getLeft() <= threshold_)
     {
       ROS_INFO("   S3 - State change!");
       current_state_ = states::S4_SCANNING_RIGHT;
     }
     break;
   case states::S4_SCANNING_RIGHT:
-    if(coils_.getRight() <= threshold_)
+    if (coils_.getRight() <= threshold_)
     {
       ROS_INFO("   S4 - State change!");
       current_state_ = states::S1_ALINGING;
     }
     break;
   case states::S5_MOVING_AWAY:
-    if(coils_.getLeft() < safe_coil_signal_ && coils_.getRight() < safe_coil_signal_)
+    if (coils_.getLeft() < safe_coil_signal_ &&
+        coils_.getRight() < safe_coil_signal_)
     {
       /*ROS_INFO("   S5 - Waiting safe time!");
       ros::Duration(safe_time_).sleep();*/
@@ -139,7 +148,7 @@ void MetalScanner::setVelocity()
     ROS_INFO("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
-  case states::S1_ALINGING:  //P controller is implemented here
+  case states::S1_ALINGING: // P controller is implemented here
     ROS_INFO("   S1 - Alinging!");
     error_ = coils_.getLeft() - coils_.getRight();
     wz = error_ * Kp_;
@@ -172,13 +181,13 @@ void MetalScanner::setVelocity(double vx, double wz)
   cmd_vel_pub_.publish(msg);
 }
 
-void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr &msg)
+void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   paused_ = msg->data;
   ROS_INFO("   pauseCallBack: %s", paused_ ? "true" : "false");
 }
 
-void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr &msg)
+void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
 {
   coils_ = msg;
 }
@@ -187,6 +196,7 @@ void MetalScanner::setPause(bool paused)
 {
   std_msgs::Bool msg;
   msg.data = paused;
+  pause_pub_.publish(msg);
   paused_ = paused;
 }
 }
