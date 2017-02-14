@@ -14,6 +14,8 @@
 #include <ros/ros.h>
 #include "visualization_msgs/MarkerArray.h"
 #include "geometry_msgs/Point.h"
+#include <cmath>
+#include <string>
 
 namespace hratc2017
 {
@@ -21,7 +23,7 @@ namespace hratc2017
   {
     public:
       Map();
-      Map(visualization_msgs::MarkerArray::ConstPtr msg);
+      Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type = "absolute");
       Map(geometry_msgs::Point leftBottomCorner, geometry_msgs::Point leftTopCorner, geometry_msgs::Point rightTopCorner, geometry_msgs::Point rightBottomCorner);
       virtual ~Map();
       geometry_msgs::Point getLeftTopCorner() const;
