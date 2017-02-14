@@ -11,6 +11,7 @@
 #ifndef _HRATC2017_ENTRIES_MAP_H_
 #define _HRATC2017_ENTRIES_MAP_H_
 
+#include <ros/ros.h>
 #include "visualization_msgs/MarkerArray.h"
 #include "geometry_msgs/Point.h"
 
@@ -19,7 +20,9 @@ namespace hratc2017
   class  Map
   {
     public:
-      Map(visualization_msgs::MarkerArray::ConstPtr& msg);
+      Map();
+      Map(visualization_msgs::MarkerArray::ConstPtr msg);
+      Map(geometry_msgs::Point leftBottomCorner, geometry_msgs::Point leftTopCorner, geometry_msgs::Point rightTopCorner, geometry_msgs::Point rightBottomCorner);
       virtual ~Map();
       geometry_msgs::Point getLeftTopCorner() const;
       geometry_msgs::Point getRightTopCorner() const;

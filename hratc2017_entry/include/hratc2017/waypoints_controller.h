@@ -14,13 +14,20 @@
 #define _HRATC2017_ENTRIES_WAYPOINTS_CONTROLLER_H_
 
 #include <ros/ros.h>
+#include "hratc2017/map.h"
 #include "utilities/ros_node.h"
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include "visualization_msgs/MarkerArray.h"
+#include <queue>
+#include "geometry_msgs/Point.h"
+
+#define DEFAULT_MAP_COVERAGE_OFFSET 1.5
 
 namespace hratc2017
 {
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 class WaypointsController : public utilities::ROSNode
 {
@@ -29,8 +36,14 @@ public:
   virtual ~WaypointsController();
 
 private:
+  MoveBaseClient move_base_client_;
+  ros::Subscriber corners_sub_;
+  Map* map_;
+  std::queue<geometry_msgs::Point> waypoints_;
   virtual void controlLoop();
-  void mapBordersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
+  void createMap(ros::NodeHandle* nh);
+  void createStrategy();
+  void mapCornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
 };
 }
 

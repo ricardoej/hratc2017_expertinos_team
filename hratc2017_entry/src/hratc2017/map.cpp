@@ -13,25 +13,26 @@
 
 namespace hratc2017
 {
-  Map::Map(visualization_msgs::MarkerArray::ConstPtr& msg)
-  {
+  Map::Map() {}
 
+  Map::Map(visualization_msgs::MarkerArray::ConstPtr msg)
+  {
     for (int i = 0; i < 3; i++)
     {
-      for (int j = i; j < 4; j++)
+      for (int j = i + 1; j < 4; j++)
       {
-        if (msg->markers[i].pose.position.x < msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y < msg->markers[j].pose.position.y)
+        if (msg->markers[i].pose.position.x <= msg->markers[j].pose.position.x
+          && msg->markers[i].pose.position.y <= msg->markers[j].pose.position.y)
         {
           leftBottomCorner_ = msg->markers[i].pose.position;
         }
-        else if (msg->markers[i].pose.position.x < msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y > msg->markers[j].pose.position.y)
+        else if (msg->markers[i].pose.position.x <= msg->markers[j].pose.position.x
+          && msg->markers[i].pose.position.y >= msg->markers[j].pose.position.y)
         {
           leftTopCorner_ = msg->markers[i].pose.position;
         }
-        else if (msg->markers[i].pose.position.x > msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y < msg->markers[j].pose.position.y)
+        else if (msg->markers[i].pose.position.x >= msg->markers[j].pose.position.x
+          && msg->markers[i].pose.position.y <= msg->markers[j].pose.position.y)
         {
           rightBottomCorner_ = msg->markers[i].pose.position;
         }
@@ -41,6 +42,14 @@ namespace hratc2017
         }
       }
     }
+  }
+
+  Map::Map(geometry_msgs::Point leftBottomCorner, geometry_msgs::Point leftTopCorner, geometry_msgs::Point rightTopCorner, geometry_msgs::Point rightBottomCorner)
+  {
+    leftBottomCorner_ = leftBottomCorner;
+    leftTopCorner_ = leftTopCorner;
+    rightTopCorner_ = rightTopCorner;
+    rightBottomCorner_ = rightBottomCorner;
   }
 
   Map::~Map() {}
