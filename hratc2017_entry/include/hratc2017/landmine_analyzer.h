@@ -40,11 +40,12 @@ public:
 
 private:
   tf::TransformListener tf_;
-  ros::Subscriber coils_sub_;
   ros::Publisher pause_pub_;
   ros::Publisher set_mine_pub_;
   ros::Publisher set_fake_mine_pub_;
   ros::Publisher polygon_pub_;
+  ros::Publisher filtered_coils_pub_;
+  ros::Subscriber coils_sub_;
   Coils coils_;
   bool paused_;
   bool possible_mine_found_;
@@ -67,6 +68,7 @@ private:
   geometry_msgs::PoseStamped getRightCoilPose() const;
   void publishLandminePose(double x, double y) const;
   void publishFakeLandminePose(double x, double y, double radius) const;
+  void publishFilteredCoilSignals() const;
   geometry_msgs::PolygonStamped landmine_;
   void setScanning(bool scanning);
   void reset();

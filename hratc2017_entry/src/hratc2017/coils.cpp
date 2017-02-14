@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.1
  *  Created on: 30/01/2017
- *  Modified on: 01/02/2017
+ *  Modified on: 14/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -19,14 +19,10 @@ namespace hratc2017
  * @param left
  * @param right
  */
-Coils::Coils(double threshold, float left, float right) : left_(left), right_(right), threshold_(threshold) {}
-
-/**
- * @brief Coils::Coils
- * @param msg
- */
-Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold)
-    : left_(msg->left_coil), right_(msg->right_coil), threshold_(threshold)
+Coils::Coils(double threshold, int number_of_observations, float left,
+             float right)
+    : left_(left), right_(right), threshold_(threshold),
+      number_of_observations_(number_of_observations)
 {
 }
 
@@ -34,8 +30,21 @@ Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold)
  * @brief Coils::Coils
  * @param msg
  */
-Coils::Coils(const metal_detector_msgs::Coil& msg, double threshold)
-    : left_(msg.left_coil), right_(msg.right_coil), threshold_(threshold)
+Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold,
+             int number_of_observations)
+    : left_(msg->left_coil), right_(msg->right_coil), threshold_(threshold),
+      number_of_observations_(number_of_observations)
+{
+}
+
+/**
+ * @brief Coils::Coils
+ * @param msg
+ */
+Coils::Coils(const metal_detector_msgs::Coil& msg, double threshold,
+             int number_of_observations)
+    : left_(msg.left_coil), right_(msg.right_coil), threshold_(threshold),
+      number_of_observations_(number_of_observations)
 {
 }
 
@@ -62,26 +71,32 @@ float Coils::getRight() const { return right_; }
  */
 void Coils::setThreshold(double threshold)
 {
-  threshold_ = threshold < 0 || threshold > 1.0 ? COIL_SIGNAL_THRESHOLD : threshold;
+  threshold_ =
+      threshold < 0 || threshold > 1.0 ? COIL_SIGNAL_THRESHOLD : threshold;
+}
+
+/**
+ * @brief Coils::setNumberOfObservations
+ * @param number_of_observations
+ */
+void Coils::setNumberOfObservations(int number_of_observations)
+{
+  number_of_observations_ = number_of_observations > 0
+                                ? number_of_observations
+                                : COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS;
 }
 
 /**
  * @brief Coils::gotLandmineOnLeft
  * @return
  */
-bool Coils::isHighCoilSignalOnLeft() const
-{
-  return left_ >= threshold_;
-}
+bool Coils::isHighCoilSignalOnLeft() const { return left_ >= threshold_; }
 
 /**
  * @brief Coils::gotLandmineOnRight
  * @return
  */
-bool Coils::isHighCoilSignalOnRight() const
-{
-  return right_ >= threshold_;
-}
+bool Coils::isHighCoilSignalOnRight() const { return right_ >= threshold_; }
 
 /**
  * @brief Coils::to_msg
@@ -90,6 +105,7 @@ bool Coils::isHighCoilSignalOnRight() const
 metal_detector_msgs::Coil Coils::to_msg() const
 {
   metal_detector_msgs::Coil msg;
+  msg.header.stamp = ros::Time::now();
   msg.left_coil = left_;
   msg.right_coil = right_;
   return msg;
@@ -137,20 +153,31 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
  * signal data whenever a new one is available.
  * @param msg new coils signal data.
  */
-void Coils::coilsCallback(
-    const metal_detector_msgs::Coil::ConstPtr& msg)
+void Coils::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
 {
+  int counter(0);
+  float filtered_signal(0.0);
   left_samples_.push_back(msg->left_coil);
-  for (int i(left_samples_.size()); i >= 0; i++)
+  for (int i(left_samples_.size() - 1); i >= 0; i--)
   {
-    left_ += left_samples_[i];
+    filtered_signal += left_samples_[i];
+    if (counter++ == number_of_observations_)
+    {
+      break;
+    }
   }
-  left_ /= NUMBER_OF_OBSERVATIONS;
+  left_ = filtered_signal / counter;
+  filtered_signal = 0;
+  counter = 0;
   right_samples_.push_back(msg->right_coil);
-  for (int i(right_samples_.size()); i >= 0; i++)
+  for (int i(right_samples_.size() - 1); i >= 0; i--)
   {
-    right_ += right_samples_[i];
+    filtered_signal += right_samples_[i];
+    if (counter++ == number_of_observations_)
+    {
+      break;
+    }
   }
-  right_ /= NUMBER_OF_OBSERVATIONS;
+  right_ = filtered_signal / counter;
 }
 }

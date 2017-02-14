@@ -25,6 +25,12 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
       paused_(true)
 {
   ros::NodeHandle pnh("~");
+  double threshold;
+  pnh.param("coil_signal_threshold", threshold, COIL_SIGNAL_THRESHOLD);
+  coils_.setThreshold(threshold);
+  int number_of_observations;
+  pnh.param("coil_signal_filter_number_of_observations", number_of_observations, COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  coils_.setNumberOfObservations(number_of_observations);
   pnh.param("linear_velocity_x", vx_, LINEAR_VELOCITY_X);
   ROS_INFO("   Linear velocity x: %f", vx_);
   pnh.param("angular_velocity_z", wz_, ANGULAR_VELOCITY_Z);
@@ -43,9 +49,6 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Coil signal tolerance: %f", coil_signal_tolerance_);
   pnh.param("safe_coil_signal", safe_coil_signal_, SAFE_COIL_SIGNAL);
   ROS_INFO("   Safe coil signal %f", safe_coil_signal_);
-  double threshold;
-  pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
-  coils_.setThreshold(threshold);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);

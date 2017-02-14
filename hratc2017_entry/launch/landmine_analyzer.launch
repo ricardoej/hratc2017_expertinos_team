@@ -4,5 +4,6 @@
   <node name="landmine_analyzer" pkg="hratc2017_entry" type="landmine_analyzer_node" output="screen">
     <rosparam file="$(find hratc2017_entry)/config/landmine_analyzer_params.yaml" command="load"/>
   </node>
-  <node name="coil_signals_plot" pkg="rqt_plot" type="rqt_plot" args="/coils" if="$(arg _plot)"/>
+  <!--<node name="plot_coil_signals" pkg="rqt_plot" type="rqt_plot" args="/coils" if="$(arg _plot)"/>-->
+  <node name="rqt_coil_signals" pkg="rqt_gui" type="rqt_gui" output="screen" args="--perspective-file $(find hratc2017_entry)/config/coil_signals.perspective -l -f"/>
 </launch>

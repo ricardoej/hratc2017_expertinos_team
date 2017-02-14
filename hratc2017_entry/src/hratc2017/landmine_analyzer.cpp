@@ -26,8 +26,11 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
 {
   ros::NodeHandle pnh("~");
   double threshold;
-  pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
+  pnh.param("coil_signal_threshold", threshold, COIL_SIGNAL_THRESHOLD);
   coils_.setThreshold(threshold);
+  int number_of_observations;
+  pnh.param("coil_signal_filter_number_of_observations", number_of_observations, COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  coils_.setNumberOfObservations(number_of_observations);
   ROS_INFO("   Coil signal threshold: %lf", threshold);
   pnh.param("max_coil_signal", max_coil_singal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
@@ -40,8 +43,6 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
-  coils_sub_ =
-      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   set_fake_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 1);
   set_mine_pub_ =
@@ -49,6 +50,9 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 10);
   pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+  filtered_coils_pub_ = nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
+  coils_sub_ =
+      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   EMPTY_POSE.header.frame_id = "UNDEF";
   EMPTY_POSE.pose.position.x = 0;
   EMPTY_POSE.pose.position.y = 0;
@@ -63,11 +67,12 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
  */
 LandmineAnalyzer::~LandmineAnalyzer()
 {
-  coils_sub_.shutdown();
   set_mine_pub_.shutdown();
   set_fake_mine_pub_.shutdown();
   polygon_pub_.shutdown();
   pause_pub_.shutdown();
+  coils_sub_.shutdown();
+  filtered_coils_pub_.shutdown();
 }
 
 /**
@@ -75,6 +80,7 @@ LandmineAnalyzer::~LandmineAnalyzer()
  */
 void LandmineAnalyzer::controlLoop()
 {
+  publishFilteredCoilSignals();
   if (!coils_.isHighCoilSignalOnLeft() && !coils_.isHighCoilSignalOnRight())
   {
     if (!sampling_)
@@ -355,6 +361,18 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
   msg.pose.position.z = radius;
   msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
   set_fake_mine_pub_.publish(msg);
+}
+
+/**
+ * @brief LandmineAnalyzer::publishFilteredCoilSignals
+ */
+void LandmineAnalyzer::publishFilteredCoilSignals() const
+{
+  metal_detector_msgs::Coil msg;
+  msg.header.stamp = ros::Time::now();
+  msg.left_coil = coils_.getLeft();
+  msg.right_coil = coils_.getRight();
+  filtered_coils_pub_.publish(msg);
 }
 
 /**
