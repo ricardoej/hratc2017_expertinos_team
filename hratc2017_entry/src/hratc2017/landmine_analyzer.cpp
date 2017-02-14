@@ -200,12 +200,39 @@ void LandmineAnalyzer::controlLoop()
   if (coils_.getLeft() >= max_coil_singal_ * alignment_tolerance_ &&
       coils_.getRight() >= max_coil_singal_ * alignment_tolerance_)
   {
-    ROS_INFO("ENTROU!!!");
+    ROS_INFO("Possible mine found on both coils!!!");
     p_max_left_.x = getLeftCoilPose().pose.position.x;
     p_max_left_.y = getLeftCoilPose().pose.position.y;
     p_max_right_.x = getRightCoilPose().pose.position.x;
     p_max_right_.y = getRightCoilPose().pose.position.y;
     possible_mine_found_ = true;
+    max_signal_found_in_both_ = true;
+  }
+
+  else
+  {
+    if (!max_signal_found_in_both_)
+    {
+      if(coils_.getLeft() >= max_coil_singal_)
+      {
+        ROS_INFO("Possible mine found in left coil!!!");
+        p_max_left_.x = getLeftCoilPose().pose.position.x;
+        p_max_left_.y = getLeftCoilPose().pose.position.y;
+        p_max_right_.x = getLeftCoilPose().pose.position.x;
+        p_max_right_.y = getLeftCoilPose().pose.position.y;
+        possible_mine_found_ = true;
+      }
+
+      if(coils_.getRight() >= max_coil_singal_)
+      {
+        ROS_INFO("Possible mine found on right coil!!!");
+        p_max_left_.x = getRightCoilPose().pose.position.x;
+        p_max_left_.y = getRightCoilPose().pose.position.y;
+        p_max_right_.x = getRightCoilPose().pose.position.x;
+        p_max_right_.y = getRightCoilPose().pose.position.y;
+        possible_mine_found_ = true;
+      }
+    }
   }
   polygon_pub_.publish(landmine_);
 }
@@ -395,6 +422,7 @@ void LandmineAnalyzer::reset()
   landmine_.header.frame_id = "minefield";
   sampling_ = false;
   possible_mine_found_ = false;
+  max_signal_found_in_both_ = false;
   setScanning(false);
 }
 }

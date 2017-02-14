@@ -47,6 +47,7 @@ private:
   ros::Publisher filtered_coils_pub_;
   ros::Subscriber coils_sub_;
   Coils coils_;
+  bool max_signal_found_in_both_;
   bool paused_;
   bool possible_mine_found_;
   bool sampling_;
