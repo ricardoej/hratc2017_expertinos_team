@@ -18,10 +18,11 @@ namespace hratc2017
 	 * @brief WaypointsController::WaypointsController
 	 * @param nh
 	 */
-	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 1), map_(NULL), move_base_client_("move_base", true)
+	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 1), map_(NULL), move_base_client_("/move_base", true)
 	{
 		createMap(nh);
-		createStrategy();
+
+		hasActiveGoal_ = false;
 	}
 
 	/**
@@ -43,30 +44,29 @@ namespace hratc2017
 	 */
 	void WaypointsController::controlLoop() 
 	{
-		//wait for the action server to come up
-		while(!move_base_client_.waitForServer(ros::Duration(5.0))){
+		// wait for the action server to come up
+		if (!move_base_client_.waitForServer(ros::Duration(0.5)))
+		{
 			ROS_INFO("Waiting for the move_base action server to come up");
 		}
-
-		move_base_msgs::MoveBaseGoal goal;
-
-		//we'll send a goal to the robot to move 1 meter forward
-		goal.target_pose.header.frame_id = "base_link";
-		goal.target_pose.header.stamp = ros::Time::now();
-
-		goal.target_pose.pose.position.x = 1.0;
-		goal.target_pose.pose.orientation.w = 1.0;
-
-		ROS_INFO("Sending goal");
-		move_base_client_.sendGoal(goal);
-
-		move_base_client_.waitForResult();
-
-		if(move_base_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-			ROS_INFO("Hooray, the base moved 1 meter forward");
 		else
-			ROS_INFO("The base failed to move forward 1 meter for some reason");
+		{
+			if (map_ && !hasActiveGoal_ && waypoints_.size() > 0)
+			{
+				move_base_msgs::MoveBaseGoal goal;
+				goal.target_pose.header.frame_id = "map";
+				goal.target_pose.header.stamp = ros::Time::now();
+				goal.target_pose.pose.position.x = waypoints_.front().x;
+				goal.target_pose.pose.position.y = waypoints_.front().y;
+				goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
 
+				ROS_INFO("Sending goal [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
+				move_base_client_.sendGoal(goal, 
+					boost::bind(&WaypointsController::goalDoneCallback, this, _1, _2),
+					boost::bind(&WaypointsController::goalActiveCallback, this), 
+					boost::bind(&WaypointsController::goalFeedbackCallback, this, _1));			
+			}
+		}
 	}
 
 	/**
@@ -76,43 +76,6 @@ namespace hratc2017
 	{
 		ROS_INFO("Subscribing to corners");
 		corners_sub_ = nh->subscribe("/corners", 100, &WaypointsController::mapCornersCallback, this);
-
-		// TODO: Retirar essa parte para ler as coordenadas do mapa a partir do tópico /corners
-		geometry_msgs::Point leftBottomCorner;
-		leftBottomCorner.x = 483236.0625;
-		leftBottomCorner.y = 6674518.5;
-		leftBottomCorner.z = 10.0;
-
-		geometry_msgs::Point leftTopCorner;
-		leftTopCorner.x = 483236.0625;
-		leftTopCorner.y = 6674528.5;
-		leftTopCorner.z = 10.0;
-
-		geometry_msgs::Point rightTopCorner;
-		rightTopCorner.x = 483246.0625;
-		rightTopCorner.y = 6674528.5;
-		rightTopCorner.z = 10.0;
-
-		geometry_msgs::Point rightBottomCorner;
-		rightBottomCorner.x = 483246.0625;
-		rightBottomCorner.y = 6674518.5;
-		rightBottomCorner.z = 10.0;
-
-		map_ = new Map(leftBottomCorner, leftTopCorner, rightTopCorner, rightBottomCorner);
-
-		ROS_INFO("Map created! (%f, %f, %f) (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)",
-			map_->getLeftBottomCorner().x,
-			map_->getLeftBottomCorner().y,
-			map_->getLeftBottomCorner().z,
-			map_->getLeftTopCorner().x,
-			map_->getLeftTopCorner().y,
-			map_->getLeftTopCorner().z,
-			map_->getRightTopCorner().x,
-			map_->getRightTopCorner().y,
-			map_->getRightTopCorner().z,
-			map_->getRightBottomCorner().x,
-			map_->getRightBottomCorner().y,
-			map_->getRightBottomCorner().z);
 	}
 
 	/**
@@ -123,7 +86,7 @@ namespace hratc2017
 		const visualization_msgs::MarkerArray::ConstPtr & corners)
 	    
 	{
-		map_ = new Map(corners);
+		map_ = new Map(corners, "relative");
 
 		ROS_INFO("Map created! (%f, %f, %f) (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)",
 			map_->getLeftBottomCorner().x,
@@ -138,6 +101,8 @@ namespace hratc2017
 			map_->getRightBottomCorner().x,
 			map_->getRightBottomCorner().y,
 			map_->getRightBottomCorner().z);
+
+		createStrategy();
 	}
 
 	/**
@@ -184,7 +149,7 @@ namespace hratc2017
 
 			geometry_msgs::Point offsetWaypoint;
 			double mapCoverageOffset;
-			ros::param::param<double>("map_coverage_offset", mapCoverageOffset, DEFAULT_MAP_COVERAGE_OFFSET);
+			ros::param::param<double>("/map_coverage_offset", mapCoverageOffset, DEFAULT_MAP_COVERAGE_OFFSET);
 			offsetWaypoint.x = currentWaypoint.x + mapCoverageOffset;
 			offsetWaypoint.y = currentWaypoint.y;
 			offsetWaypoint.z = currentWaypoint.z;
@@ -198,5 +163,34 @@ namespace hratc2017
 				hasTargetFinishPoint = true;
 			}
 		}
+	}
+
+	/**
+	 * @brief WaypointsController::goalDoneCallback called once when the goal completes
+	 */
+	void WaypointsController::goalDoneCallback(const actionlib::SimpleClientGoalState& state, 
+		const move_base_msgs::MoveBaseResult::ConstPtr &result)
+	{
+	  ROS_INFO("Finished in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
+	  waypoints_.pop();
+	  hasActiveGoal_ = false;
+	}
+
+	/**
+	 * @brief WaypointsController::goalActiveCallback called once when the goal becomes active
+	 */
+	void WaypointsController::goalActiveCallback()
+	{
+	  ROS_INFO("Goal just went active");
+	  hasActiveGoal_ = true;
+	}
+
+	/**
+	 * @brief WaypointsController::goalFeedbackCallback called every time feedback is received for the goal
+	 */
+	void WaypointsController::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback)
+	{
+	  //ROS_INFO("Feedback [X]:%f [Y]:%f [W]: %f",
+	  //	feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w); 
 	}
 }

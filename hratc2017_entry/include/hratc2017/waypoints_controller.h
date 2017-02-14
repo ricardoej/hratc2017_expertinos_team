@@ -21,6 +21,9 @@
 #include "visualization_msgs/MarkerArray.h"
 #include <queue>
 #include "geometry_msgs/Point.h"
+#include <tf/transform_datatypes.h>
+#include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/terminal_state.h>
 
 #define DEFAULT_MAP_COVERAGE_OFFSET 1.5
 
@@ -40,10 +43,14 @@ private:
   ros::Subscriber corners_sub_;
   Map* map_;
   std::queue<geometry_msgs::Point> waypoints_;
+  bool hasActiveGoal_;
   virtual void controlLoop();
   void createMap(ros::NodeHandle* nh);
   void createStrategy();
   void mapCornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
+  void goalDoneCallback(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResult::ConstPtr &result);
+  void goalActiveCallback();
+  void goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback);
 };
 }
 

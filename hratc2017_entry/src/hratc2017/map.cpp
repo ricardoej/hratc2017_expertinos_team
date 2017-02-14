@@ -10,37 +10,39 @@
  */
 
 #include "hratc2017/map.h"
+#define OFFSET 2
 
 namespace hratc2017
 {
   Map::Map() {}
 
-  Map::Map(visualization_msgs::MarkerArray::ConstPtr msg)
+  Map::Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type)
   {
-    for (int i = 0; i < 3; i++)
+    leftBottomCorner_ = msg->markers[0].pose.position;
+    rightBottomCorner_ = msg->markers[1].pose.position;
+    rightTopCorner_ = msg->markers[2].pose.position;
+    leftTopCorner_ = msg->markers[3].pose.position;
+
+    if (type == "relative")
     {
-      for (int j = i + 1; j < 4; j++)
-      {
-        if (msg->markers[i].pose.position.x <= msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y <= msg->markers[j].pose.position.y)
-        {
-          leftBottomCorner_ = msg->markers[i].pose.position;
-        }
-        else if (msg->markers[i].pose.position.x <= msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y >= msg->markers[j].pose.position.y)
-        {
-          leftTopCorner_ = msg->markers[i].pose.position;
-        }
-        else if (msg->markers[i].pose.position.x >= msg->markers[j].pose.position.x
-          && msg->markers[i].pose.position.y <= msg->markers[j].pose.position.y)
-        {
-          rightBottomCorner_ = msg->markers[i].pose.position;
-        }
-        else
-        {
-          rightTopCorner_ = msg->markers[i].pose.position; 
-        }
-      }
+      double xSize = std::abs(leftTopCorner_.x - rightTopCorner_.x);
+      double ySize = std::abs(leftBottomCorner_.x - rightBottomCorner_.x);
+
+      leftBottomCorner_.x = -1 * xSize / 2 + OFFSET;
+      leftBottomCorner_.y = -1 * ySize / 2 + OFFSET;
+      leftBottomCorner_.z = 0;
+
+      leftTopCorner_.x = -1 * xSize / 2 + OFFSET;
+      leftTopCorner_.y = ySize / 2 - OFFSET;
+      leftTopCorner_.z = 0;
+
+      rightTopCorner_.x = xSize / 2 - OFFSET;
+      rightTopCorner_.y = ySize / 2 - OFFSET;
+      rightTopCorner_.z = 0;
+
+      rightBottomCorner_.x = xSize / 2 - OFFSET;
+      rightBottomCorner_.y = -1 * ySize / 2 + OFFSET;
+      rightBottomCorner_.z = 0;
     }
   }
 
