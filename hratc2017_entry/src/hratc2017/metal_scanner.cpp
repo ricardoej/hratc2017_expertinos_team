@@ -22,7 +22,7 @@ namespace hratc2017
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
     : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
-      paused_(true)
+      scanning_(false)
 {
   ros::NodeHandle pnh("~");
   double threshold;
@@ -53,8 +53,8 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Safe_time %f", safe_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
-  pause_sub_ =
-      nh->subscribe("pause_scanning", 1, &MetalScanner::pauseCallback, this);
+  scanning_sub_ =
+      nh->subscribe("start_scanning", 1, &MetalScanner::scanningCallback, this);
 }
 
 /**
@@ -64,7 +64,7 @@ MetalScanner::~MetalScanner()
 {
   cmd_vel_pub_.shutdown();
   coils_sub_.shutdown();
-  pause_sub_.shutdown();
+  scanning_sub_.shutdown();
 }
 
 /**
@@ -72,9 +72,9 @@ MetalScanner::~MetalScanner()
  */
 void MetalScanner::controlLoop()
 {
-  if (paused_)
+  if (!scanning_)
   {
-    ROS_DEBUG("   Paused!!!");
+    ROS_DEBUG("   not scanning!!!");
     return;
   }
   setNextState();
@@ -193,14 +193,18 @@ void MetalScanner::setVelocity(double vx, double wz)
  * @brief MetalScanner::pauseCallback
  * @param msg
  */
-void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr& msg)
+void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
 {
-  paused_ = msg->data;
-  ROS_INFO("   scanning: %s", !paused_ ? "true" : "false");
-  if (paused_)
+  if(scanning_ != msg->data)
   {
-    reset();
+    scanning_ = msg->data;
+    ROS_INFO("   scanning: %s", scanning_ ? "true" : "false");
+    if (!scanning_)
+    {
+      reset();
+    }
   }
+
 }
 
 /**
@@ -208,7 +212,8 @@ void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr& msg)
  */
 void MetalScanner::reset()
 {
-  paused_ = true;
+  scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
+  setVelocity(0,0);
 }
 }

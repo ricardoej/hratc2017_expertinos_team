@@ -7,12 +7,12 @@ topics:
 -
   name    : metal_scanner
   topic   : metal_scanner/cmd_vel
-  timeout : 0.5
+  timeout : 1.5
   priority: 100
 
 locks:
 -
-  name    : pause_scanning
-  topic   : pause_scanning
+  name    : start_scanning
+  topic   : start_scanning
   timeout : 0.0
-  priority: 150
+  priority: 80

@@ -49,7 +49,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 1);
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 10);
-  pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+  pause_pub_ = nh->advertise<std_msgs::Bool>("start_scanning", 1);
   filtered_coils_pub_ = nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
   coils_sub_ =
       nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
@@ -156,23 +156,14 @@ void LandmineAnalyzer::controlLoop()
                  mine_center_.y);
       }
       reset();
-      //      if(possible_mine_found_ && radius >= min_signal_radius_)
-      //      {
-      //          publishLandminePose(mine_center_.x, mine_center_.y);
-      //          ROS_INFO("MINA REAL");
-      //      }else{
-      //        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
-      //        ROS_INFO("MINA FALSA");
-      //      }
-      //      reset();
+
     }
     return;
   }
-  if (!sampling_)
-  {
-    sampling_ = true;
-    setScanning(true);
-  }
+  //é necessário ficar publicando para twist_mux travar o navigation constantemente
+  sampling_ = true;
+  setScanning(true);
+
   landmine_.header.stamp = ros::Time::now();
 
   geometry_msgs::PoseStamped coil_pose;
@@ -409,7 +400,7 @@ void LandmineAnalyzer::publishFilteredCoilSignals() const
 void LandmineAnalyzer::setScanning(bool scanning)
 {
   std_msgs::Bool msg;
-  msg.data = !scanning;
+  msg.data = scanning;
   pause_pub_.publish(msg);
 }
 

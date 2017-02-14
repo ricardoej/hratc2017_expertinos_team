@@ -57,7 +57,7 @@ public:
 private:
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber coils_sub_;
-  ros::Subscriber pause_sub_;
+  ros::Subscriber scanning_sub_;
   StateEnum current_state_;
   Coils coils_;
   double vx_;
@@ -71,13 +71,13 @@ private:
   double coil_signal_tolerance_;
   double safe_coil_signal_;
   double safe_time_;
-  bool paused_;
+  bool scanning_;
   virtual void controlLoop();
   StateEnum setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
   void reset();
-  void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
+  void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
 };
 }
 
