@@ -37,10 +37,13 @@ private:
   void reconfigureCallback(costmap_2d::GenericPluginConfig& config,
                            uint32_t level);
   void landminesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+  void fakeLandminesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
   ros::Subscriber landmines_sub_;
+  ros::Subscriber fake_landmines_sub_;
   bool new_landmine_;
   std::vector<geometry_msgs::Point> landmines_;
+  std::vector<geometry_msgs::Point> fake_landmines_;
   double min_x_, min_y_, max_x_, max_y_;
   int num_parts_;
   double radius_;

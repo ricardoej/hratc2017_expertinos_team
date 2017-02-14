@@ -15,4 +15,4 @@ locks:
   name    : pause_scanning
   topic   : pause_scanning
   timeout : 0.0
-  priority: 100
+  priority: 150

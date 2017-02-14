@@ -7,6 +7,7 @@
  *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
+ *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -42,13 +43,13 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Coil signal tolerance: %f", coil_signal_tolerance_);
   pnh.param("safe_coil_signal", safe_coil_signal_, SAFE_COIL_SIGNAL);
   ROS_INFO("   Safe coil signal %f", safe_coil_signal_);
-  pnh.param("threshold", threshold_, THRESHOLD);
-  ROS_INFO("   Threshold %f", threshold_);
+  double threshold;
+  pnh.param("threshold", threshold, COIL_SIGNAL_THRESHOLD);
+  coils_.setThreshold(threshold);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
-  coils_sub_ = nh->subscribe("/coils", 10, &MetalScanner::coilsCallback, this);
-  pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   pause_sub_ =
       nh->subscribe("pause_scanning", 1, &MetalScanner::pauseCallback, this);
 }
@@ -60,7 +61,6 @@ MetalScanner::~MetalScanner()
 {
   cmd_vel_pub_.shutdown();
   coils_sub_.shutdown();
-  pause_pub_.shutdown();
   pause_sub_.shutdown();
 }
 
@@ -72,16 +72,16 @@ void MetalScanner::controlLoop()
   if (paused_)
   {
     ROS_DEBUG("   Paused!!!");
-    if (coils_.isHighCoilSignalOnLeft() || coils_.isHighCoilSignalOnRight())
-    {
-      setPause(false);
-    }
     return;
   }
   setNextState();
   setVelocity();
 }
 
+/**
+ * @brief MetalScanner::setNextState
+ * @return
+ */
 StateEnum MetalScanner::setNextState()
 {
   switch (current_state_)
@@ -110,14 +110,14 @@ StateEnum MetalScanner::setNextState()
     }
     break;
   case states::S3_SCANNING_LEFT:
-    if (coils_.getLeft() <= threshold_)
+    if (!coils_.isHighCoilSignalOnLeft())
     {
       ROS_INFO("   S3 - State change!");
       current_state_ = states::S4_SCANNING_RIGHT;
     }
     break;
   case states::S4_SCANNING_RIGHT:
-    if (coils_.getRight() <= threshold_)
+    if (!coils_.isHighCoilSignalOnRight())
     {
       ROS_INFO("   S4 - State change!");
       current_state_ = states::S1_ALINGING;
@@ -127,17 +127,17 @@ StateEnum MetalScanner::setNextState()
     if (coils_.getLeft() < safe_coil_signal_ &&
         coils_.getRight() < safe_coil_signal_)
     {
-      /*ROS_INFO("   S5 - Waiting safe time!");
-      ros::Duration(safe_time_).sleep();*/
       setVelocity(0, 0);
       ROS_INFO("   S5 - State change!");
-      current_state_ = states::S0_SETTING_UP;
-      setPause(true);
+      reset();
     }
     break;
   }
 }
 
+/**
+ * @brief MetalScanner::setVelocity
+ */
 void MetalScanner::setVelocity()
 {
   double wz;
@@ -145,34 +145,39 @@ void MetalScanner::setVelocity()
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
-    ROS_INFO("   S0 - Setting up!");
+    ROS_DEBUG("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
   case states::S1_ALINGING: // P controller is implemented here
-    ROS_INFO("   S1 - Alinging!");
+    ROS_DEBUG("   S1 - Alinging!");
     error_ = coils_.getLeft() - coils_.getRight();
     wz = error_ * Kp_;
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
     break;
   case states::S2_SCANNING_FOWARD:
-    ROS_INFO("   S2 - Scanning foward!");
+    ROS_DEBUG("   S2 - Scanning foward!");
     setVelocity(vx_, 0);
     break;
   case states::S3_SCANNING_LEFT:
-    ROS_INFO("   S3 - Scanning left!");
+    ROS_DEBUG("   S3 - Scanning left!");
     setVelocity(0, wz_);
     break;
   case states::S4_SCANNING_RIGHT:
-    ROS_INFO("   S4 - Scanning right!");
+    ROS_DEBUG("   S4 - Scanning right!");
     setVelocity(0, -wz_);
     break;
   case states::S5_MOVING_AWAY:
-    ROS_INFO("   S5 - Moving away!");
+    ROS_DEBUG("   S5 - Moving away!");
     setVelocity(-vx_, 0);
     break;
   }
 }
 
+/**
+ * @brief MetalScanner::setVelocity
+ * @param vx
+ * @param wz
+ */
 void MetalScanner::setVelocity(double vx, double wz)
 {
   geometry_msgs::Twist msg;
@@ -181,22 +186,26 @@ void MetalScanner::setVelocity(double vx, double wz)
   cmd_vel_pub_.publish(msg);
 }
 
+/**
+ * @brief MetalScanner::pauseCallback
+ * @param msg
+ */
 void MetalScanner::pauseCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   paused_ = msg->data;
-  ROS_INFO("   pauseCallBack: %s", paused_ ? "true" : "false");
+  ROS_INFO("   scanning: %s", !paused_ ? "true" : "false");
+  if (paused_)
+  {
+    reset();
+  }
 }
 
-void MetalScanner::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
+/**
+ * @brief MetalScanner::reset
+ */
+void MetalScanner::reset()
 {
-  coils_ = msg;
-}
-
-void MetalScanner::setPause(bool paused)
-{
-  std_msgs::Bool msg;
-  msg.data = paused;
-  pause_pub_.publish(msg);
-  paused_ = paused;
+  paused_ = true;
+  current_state_ = states::S0_SETTING_UP;
 }
 }

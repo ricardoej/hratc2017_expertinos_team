@@ -15,15 +15,18 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <metal_detector_msgs/Coil.h>
 
+#define COIL_SIGNAL_THRESHOLD 0.6
+#define NUMBER_OF_OBSERVATIONS 5
+
 namespace hratc2017
 {
 
 class  Coils
 {
 public:
-  Coils(double threshold = Coils::THRESHOLD, float left = 0.0, float right = 0.0);
-  Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold = Coils::THRESHOLD);
-  Coils(const metal_detector_msgs::Coil& msg, double threshold = Coils::THRESHOLD);
+  Coils(double threshold = COIL_SIGNAL_THRESHOLD, float left = 0.0, float right = 0.0);
+  Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold = COIL_SIGNAL_THRESHOLD);
+  Coils(const metal_detector_msgs::Coil& msg, double threshold = COIL_SIGNAL_THRESHOLD);
   virtual ~Coils();
   float getLeft() const;
   float getRight() const;
@@ -35,12 +38,14 @@ public:
   const char* c_str() const;
   void operator=(const metal_detector_msgs::Coil::ConstPtr& msg);
   void operator=(const metal_detector_msgs::Coil& msg);
-  const static double THRESHOLD;
+  void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
 
 private:
   float left_;
   float right_;
   double threshold_;
+  std::vector<float> left_samples_;
+  std::vector<float> right_samples_;
 };
 }
 

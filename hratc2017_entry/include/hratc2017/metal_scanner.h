@@ -7,6 +7,7 @@
  *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
+ *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -54,9 +55,7 @@ public:
   virtual ~MetalScanner();
 
 private:
-  virtual void controlLoop();
   ros::Publisher cmd_vel_pub_;
-  ros::Publisher pause_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber pause_sub_;
   StateEnum current_state_;
@@ -71,15 +70,14 @@ private:
   double ref_coil_signal_;
   double coil_signal_tolerance_;
   double safe_coil_signal_;
-  double threshold_;
   double safe_time_;
   bool paused_;
+  virtual void controlLoop();
   StateEnum setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
-  void setPause(bool paused);
+  void reset();
   void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
-  void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
 };
 }
 

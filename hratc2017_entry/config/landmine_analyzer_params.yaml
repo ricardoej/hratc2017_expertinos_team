@@ -1,5 +1,6 @@
 threshold: 0.5
 sampling_end_interval: 3.0
 max_coil_signal: 1.0
-alignment_tolerance: 0.1
-minimal_signal_radius: 0.2
+alignment_tolerance: 0.95
+minimal_signal_radius: 0.15
+maximal_signal_radius: 0.55
