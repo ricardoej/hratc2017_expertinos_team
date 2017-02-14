@@ -31,6 +31,13 @@
 # HRATC Project
 
 *~
+./CMakeLists.txt
+
+# Qt Creator Project
+
 *.workspace
 *.user
-./CMakeLists.txt
+*.config
+*.creator
+*.files
+*.includes

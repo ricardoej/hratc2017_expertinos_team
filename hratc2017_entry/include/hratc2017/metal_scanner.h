@@ -54,7 +54,6 @@ public:
   virtual ~MetalScanner();
 
 private:
-  virtual void controlLoop();
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber pause_sub_;
@@ -73,6 +72,7 @@ private:
   double threshold_;
   double safe_time_;
   bool paused_;
+  virtual void controlLoop();
   StateEnum setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
