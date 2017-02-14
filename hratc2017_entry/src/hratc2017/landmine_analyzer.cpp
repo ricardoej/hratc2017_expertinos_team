@@ -33,22 +33,22 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
   ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
-  pnh.param("sampling_end_interval", sampling_end_interval_, SAMPLING_END_INTERVAL);
+  pnh.param("sampling_end_interval", sampling_end_interval_,
+            SAMPLING_END_INTERVAL);
   ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
   pnh.param("minimal_signal_radius", min_signal_radius_, MIN_SIGNAL_RADIUS);
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
   coils_sub_ =
-      nh->subscribe("/coils", 10, &LandmineAnalyzer::coilsCallback, this);
+      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   set_fake_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 1);
   set_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 1);
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 10);
-  pause_pub_ =
-      nh->advertise<std_msgs::Bool>("pause_scanning", 1);
+  pause_pub_ = nh->advertise<std_msgs::Bool>("pause_scanning", 1);
   EMPTY_POSE.header.frame_id = "UNDEF";
   EMPTY_POSE.pose.position.x = 0;
   EMPTY_POSE.pose.position.y = 0;
@@ -84,66 +84,88 @@ void LandmineAnalyzer::controlLoop()
     double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
     if (elapsed_time > sampling_end_interval_)
     {
-      if(possible_mine_found_)  // Se entrou nesta parte do código, os sensores foram saturados ao mesmo tempo, portanto analiza-se o raio do sinal para ver se é uma mina.
+      if (possible_mine_found_) // Se entrou nesta parte do código, os sensores
+                                // foram saturados ao mesmo tempo, portanto
+                                // analiza-se o raio do sinal para ver se é uma
+                                // mina.
       {
         mine_center_.x = (p_max_left_.x + p_max_right_.x) / 2;
         mine_center_.y = (p_max_left_.y + p_max_right_.y) / 2;
-        float radius(sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) + pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
+        float radius(
+            sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) +
+                 pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
         ROS_INFO("   Signal radius = %f [meters]", radius);
         float area(M_PI * pow(radius, 2));
         ROS_INFO("   Signal area = %f [square meters]", area);
-        if(radius >= min_signal_radius_ && radius <= max_signal_radius_)  // Se o raio tem os valores padrão para uma mina, a mina fora identificada.
+        if (radius >= min_signal_radius_ &&
+            radius <= max_signal_radius_) // Se o raio tem os valores padrão
+                                          // para uma mina, a mina fora
+                                          // identificada.
         {
           publishLandminePose(mine_center_.x, mine_center_.y);
           ROS_INFO("   Real mine found!!!");
-          ROS_INFO("   Mine location guess: [%f, %f]", mine_center_.x, mine_center_.y);
+          ROS_INFO("   Mine location guess: [%f, %f]", mine_center_.x,
+                   mine_center_.y);
         }
-        else  // Senão, temos um falso postivo, com sinal correto, mas raio pequeno demais.
+        else // Senão, temos um falso postivo, com sinal correto, mas raio
+             // pequeno demais.
         {
           publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
           ROS_INFO("   False mine found!!!");
-          ROS_INFO("   False mine location guess: [%f, %f]", mine_center_.x, mine_center_.y);
+          ROS_INFO("   False mine location guess: [%f, %f]", mine_center_.x,
+                   mine_center_.y);
         }
-       }
+      }
 
-      else  // Caso entre nesta parte do código, os sensores não foram saturados, ou seja, mesmo que o raio do sinal seja correto, é uma mina falsa pela baixa intensidade captada.
+      else // Caso entre nesta parte do código, os sensores não foram saturados,
+           // ou seja, mesmo que o raio do sinal seja correto, é uma mina falsa
+           // pela baixa intensidade captada.
       {
         float divisor(0);
-        for(int i = 0; i < landmine_.polygon.points.size(); i++)  // Como não fora setado um centro para o falso positivo, obtém-se seu valor pela média ponderada pela intensidade do sinal (colocada na coordenada z do landmine_.polygon.points - linhas 157 e 166), dos pontos encontrados na área de sinal elevado.
+        for (int i = 0; i < landmine_.polygon.points.size();
+             i++) // Como não fora setado um centro para o falso positivo,
+                  // obtém-se seu valor pela média ponderada pela intensidade do
+                  // sinal (colocada na coordenada z do landmine_.polygon.points
+                  // - linhas 157 e 166), dos pontos encontrados na área de
+                  // sinal elevado.
         {
-          mine_center_.x += landmine_.polygon.points[i].x * landmine_.polygon.points[i].z;
-          mine_center_.y += landmine_.polygon.points[i].y * landmine_.polygon.points[i].z;
+          mine_center_.x +=
+              landmine_.polygon.points[i].x * landmine_.polygon.points[i].z;
+          mine_center_.y +=
+              landmine_.polygon.points[i].y * landmine_.polygon.points[i].z;
           divisor += landmine_.polygon.points[i].z;
         }
         mine_center_.x /= divisor;
         mine_center_.y /= divisor;
-        float radius(sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) + pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
+        float radius(
+            sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) +
+                 pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
         ROS_INFO("   Signal radius = %f [meters]", radius);
         float area(M_PI * pow(radius, 2));
         ROS_INFO("   Signal area = %f [square meters]", area);
-        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);  // Publica-se o falso positivo.
+        publishFakeLandminePose(mine_center_.x, mine_center_.y,
+                                radius); // Publica-se o falso positivo.
         ROS_INFO("   False mine found!!!");
-        ROS_INFO("   False mine location guess: [%f, %f]", mine_center_.x, mine_center_.y);
+        ROS_INFO("   False mine location guess: [%f, %f]", mine_center_.x,
+                 mine_center_.y);
       }
       reset();
-//      if(possible_mine_found_ && radius >= min_signal_radius_)
-//      {
-//          publishLandminePose(mine_center_.x, mine_center_.y);
-//          ROS_INFO("MINA REAL");
-//      }else{
-//        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
-//        ROS_INFO("MINA FALSA");
-//      }
-//      reset();
-
+      //      if(possible_mine_found_ && radius >= min_signal_radius_)
+      //      {
+      //          publishLandminePose(mine_center_.x, mine_center_.y);
+      //          ROS_INFO("MINA REAL");
+      //      }else{
+      //        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
+      //        ROS_INFO("MINA FALSA");
+      //      }
+      //      reset();
     }
     return;
   }
-  if(!sampling_)
+  if (!sampling_)
   {
     sampling_ = true;
     setScanning(true);
-
   }
   landmine_.header.stamp = ros::Time::now();
 
@@ -154,7 +176,8 @@ void LandmineAnalyzer::controlLoop()
     coil_pose = getLeftCoilPose();
     p.x = coil_pose.pose.position.x;
     p.y = coil_pose.pose.position.y;
-    p.z = coils_.getLeft(); // O peso (valor do sinal) no ponto foi salvo na cordenada z para se obter uma média ponderada.
+    p.z = coils_.getLeft(); // O peso (valor do sinal) no ponto foi salvo na
+                            // cordenada z para se obter uma média ponderada.
     landmine_.polygon.points.push_back(p);
   }
 
@@ -163,7 +186,8 @@ void LandmineAnalyzer::controlLoop()
     coil_pose = getRightCoilPose();
     p.x = coil_pose.pose.position.x;
     p.y = coil_pose.pose.position.y;
-    p.z = coils_.getRight();  // O peso (valor do sinal) no ponto foi salvo na cordenada z para se obter uma média ponderada.
+    p.z = coils_.getRight(); // O peso (valor do sinal) no ponto foi salvo na
+                             // cordenada z para se obter uma média ponderada.
     landmine_.polygon.points.push_back(p);
   }
 
@@ -206,18 +230,6 @@ void LandmineAnalyzer::landmineDetected(double x, double y) const
   mine_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
   ROS_INFO("Setting a mine on x:%lf y:%lf", x, y);
   set_mine_pub_.publish(mine_pose);
-}
-
-/**
- * @brief LandmineAnalyzer::coilsCallback receives the metal detector coils
- * signal data whenever a new one is available.
- * @param msg new coils signal data.
- */
-void LandmineAnalyzer::coilsCallback(
-    const metal_detector_msgs::Coil::ConstPtr& msg)
-{
-  coils_ = msg;
-  // ROS_INFO("[COILS CB] new reading: %s", coils_.c_str());
 }
 
 /**
@@ -309,6 +321,11 @@ geometry_msgs::PoseStamped LandmineAnalyzer::getRightCoilPose() const
   return getCoilPose(false);
 }
 
+/**
+ * @brief LandmineAnalyzer::publishLandminePose
+ * @param x
+ * @param y
+ */
 void LandmineAnalyzer::publishLandminePose(double x, double y) const
 {
   geometry_msgs::PoseStamped msg;
@@ -321,7 +338,15 @@ void LandmineAnalyzer::publishLandminePose(double x, double y) const
   set_mine_pub_.publish(msg);
 }
 
-void LandmineAnalyzer::publishFakeLandminePose(double x, double y, double radius) const{
+/**
+ * @brief LandmineAnalyzer::publishFakeLandminePose
+ * @param x
+ * @param y
+ * @param radius
+ */
+void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
+                                               double radius) const
+{
   geometry_msgs::PoseStamped msg;
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "minefield";
@@ -332,6 +357,10 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y, double radius
   set_fake_mine_pub_.publish(msg);
 }
 
+/**
+ * @brief LandmineAnalyzer::setScanning
+ * @param scanning
+ */
 void LandmineAnalyzer::setScanning(bool scanning)
 {
   std_msgs::Bool msg;
@@ -339,6 +368,9 @@ void LandmineAnalyzer::setScanning(bool scanning)
   pause_pub_.publish(msg);
 }
 
+/**
+ * @brief LandmineAnalyzer::reset
+ */
 void LandmineAnalyzer::reset()
 {
   landmine_ = geometry_msgs::PolygonStamped();
@@ -347,6 +379,4 @@ void LandmineAnalyzer::reset()
   possible_mine_found_ = false;
   setScanning(false);
 }
-
-
 }

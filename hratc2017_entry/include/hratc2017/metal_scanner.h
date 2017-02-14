@@ -7,6 +7,7 @@
  *  Modified on: 13/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
+ *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -69,7 +70,6 @@ private:
   double ref_coil_signal_;
   double coil_signal_tolerance_;
   double safe_coil_signal_;
-  double threshold_;
   double safe_time_;
   bool paused_;
   virtual void controlLoop();
@@ -77,7 +77,6 @@ private:
   void setVelocity();
   void setVelocity(double vx, double wz);
   void reset();
-  void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
   void pauseCallback(const std_msgs::Bool::ConstPtr& msg);
 };
 }

@@ -14,8 +14,6 @@
 namespace hratc2017
 {
 
-const double Coils::THRESHOLD = 0.65f;
-
 /**
  * @brief Coils::Coils
  * @param left
@@ -64,7 +62,7 @@ float Coils::getRight() const { return right_; }
  */
 void Coils::setThreshold(double threshold)
 {
-  threshold_ = threshold < 0 || threshold > 1.0 ? Coils::THRESHOLD : threshold;
+  threshold_ = threshold < 0 || threshold > 1.0 ? COIL_SIGNAL_THRESHOLD : threshold;
 }
 
 /**
@@ -132,5 +130,27 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
 {
   left_ = msg.left_coil;
   right_ = msg.right_coil;
+}
+
+/**
+ * @brief LandmineAnalyzer::coilsCallback receives the metal detector coils
+ * signal data whenever a new one is available.
+ * @param msg new coils signal data.
+ */
+void Coils::coilsCallback(
+    const metal_detector_msgs::Coil::ConstPtr& msg)
+{
+  left_samples_.push_back(msg->left_coil);
+  for (int i(left_samples_.size()); i >= 0; i++)
+  {
+    left_ += left_samples_[i];
+  }
+  left_ /= NUMBER_OF_OBSERVATIONS;
+  right_samples_.push_back(msg->right_coil);
+  for (int i(right_samples_.size()); i >= 0; i++)
+  {
+    right_ += right_samples_[i];
+  }
+  right_ /= NUMBER_OF_OBSERVATIONS;
 }
 }
