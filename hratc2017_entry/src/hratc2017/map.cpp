@@ -10,7 +10,7 @@
  */
 
 #include "hratc2017/map.h"
-#define OFFSET 2
+#define OFFSET 1.5
 
 namespace hratc2017
 {

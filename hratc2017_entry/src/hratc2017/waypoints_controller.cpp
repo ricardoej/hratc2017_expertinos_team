@@ -20,10 +20,10 @@ namespace hratc2017
 	 */
 	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true)
 	{
-		ROS_INFO("Subscribing to corners");
+		ROS_DEBUG("Subscribing to corners");
 		corners_sub_ = nh->subscribe("/corners", 100, &WaypointsController::mapCornersCallback, this);
 
-		ROS_INFO("Subscribing to start_scanning");
+		ROS_DEBUG("Subscribing to start_scanning");
 		start_scanning_sub_ = nh->subscribe("/p3at/start_scanning", 100, &WaypointsController::startScanningCallback, this);
 
 		has_active_goal_ = false;
@@ -52,16 +52,16 @@ namespace hratc2017
 		// wait for the action server to come up
 		if (!move_base_client_.waitForServer(ros::Duration(0.5)))
 		{
-			ROS_INFO("Waiting for the move_base action server to come up");
+			ROS_DEBUG("Waiting for the move_base action server to come up");
 		}
 		else
 		{
 			if (is_scanning_ && has_active_goal_)
 			{
 				move_base_client_.cancelAllGoals();
-				ROS_INFO("Cancel goals");
+				ROS_INFO("Send cancel goals");
 			}
-			else if (map_ && !has_active_goal_ && waypoints_.size() > 0)
+			else if (map_ && !has_active_goal_ && !is_scanning_ && waypoints_.size() > 0)
 			{
 				move_base_msgs::MoveBaseGoal goal;
 				goal.target_pose.header.frame_id = "map";
@@ -89,7 +89,7 @@ namespace hratc2017
 	{
 		map_ = new Map(corners, "relative");
 
-		ROS_INFO("Map created! (%f, %f, %f) (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)",
+		ROS_DEBUG("Map created! (%f, %f, %f) (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)",
 			map_->getLeftBottomCorner().x,
 			map_->getLeftBottomCorner().y,
 			map_->getLeftBottomCorner().z,
@@ -112,7 +112,7 @@ namespace hratc2017
 	 */
 	void WaypointsController::startScanningCallback(const std_msgs::Bool::ConstPtr& msg)
 	{
-		ROS_INFO("start_scanning %s", msg->data ? "TRUE" : "FALSE");
+		ROS_DEBUG("start_scanning %s", msg->data ? "TRUE" : "FALSE");
 		if (is_scanning_ != msg->data)
 		{
 			is_scanning_ = msg->data;
@@ -189,14 +189,19 @@ namespace hratc2017
 		ROS_INFO("Finished in state [%s]", state.toString().c_str());
 		if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
 		{
-			ROS_INFO("Finished in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
+			ROS_INFO("Succeeded in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
 			waypoints_.pop();
 			has_active_goal_ = false;
 		}
-		else if (state == actionlib::SimpleClientGoalState::ABORTED || state == actionlib::SimpleClientGoalState::REJECTED
-			|| state == actionlib::SimpleClientGoalState::PREEMPTED)
+		else if (state == actionlib::SimpleClientGoalState::ABORTED || state == actionlib::SimpleClientGoalState::REJECTED)
 		{
 			ROS_INFO("Goal aborted or rejected");
+			waypoints_.pop();
+			has_active_goal_ = false;
+		}
+		else if (state == actionlib::SimpleClientGoalState::PREEMPTED)
+		{
+			ROS_INFO("Goal canceled");
 			has_active_goal_ = false;
 		}
 	}
