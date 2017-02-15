@@ -1,10 +1,13 @@
 <class_libraries>
   <library path="lib/libhratc2017_layers">
+  <class type="hratc2017::CoveredAreaLayer" base_class_type="costmap_2d::Layer">
+    <description>Layer that marks the already covered area</description>
+  </class>-->
     <class type="hratc2017::LandminesLayer" base_class_type="costmap_2d::Layer">
       <description>Layer that adds a point at each detected landmine</description>
     </class>
-    <class type="hratc2017::CoveredAreaLayer" base_class_type="costmap_2d::Layer">
-      <description>Layer that marks the already covered area</description>
+    <class type="hratc2017::ObstaclesLayer" base_class_type="costmap_2d::Layer">
+      <description>Layer that adds a point at each obstacle</description>
     </class>-->
   </library>
 </class_libraries>

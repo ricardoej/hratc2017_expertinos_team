@@ -1,8 +1,13 @@
-landmines_layer:
-  num_parts: 18
-  radius: 0.25
-  landmine_topic: '/HRATC_FW/set_mine'
-  fake_landmine_topic: '/HRATC_FW/set_fake_mine'
-
 covered_area_layer:
   default_value: 128          # in range of [0, 255]
+
+landmines_layer:
+  num_parts: 18
+  radius: 0.5
+  landmines_topic: '/HRATC_FW/set_mine'
+  fake_landmines_topic: '/HRATC_FW/set_fake_mine'
+
+obstacles_layer:
+  num_parts: 18
+  radius: 0.25
+  obstacles_topic: '/HRATC_FW/set_mine'

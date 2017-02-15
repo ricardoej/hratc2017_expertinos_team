@@ -1,10 +1,10 @@
 /**
  *  This source file implements the LandminesLayer class, which is based
- *on the constmap_2d::Layer class.
+ *on the costmap_2d::Layer class.
  *
  *  Version: 0.0.3
  *  Created on: 01/02/2017
- *  Modified on: 08/02/2017
+ *  Modified on: 15/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -55,11 +55,11 @@ void LandminesLayer::onInitialize()
   ROS_INFO("    Number of parts of landmine circumference: %d", num_parts_);
   std::string source;
   current_ = true;
-  nh.param("landmine_topic", source, std::string("/HRATC_FW/set_mine"));
+  nh.param("landmines_topic", source, std::string("/HRATC_FW/set_mine"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
   landmines_sub_ =
       nh.subscribe(source, 10, &LandminesLayer::landminesCallback, this);
-  nh.param("fake_landmine_topic", source, std::string("/HRATC_FW/set_fake_mine"));
+  nh.param("fake_landmines_topic", source, std::string("/HRATC_FW/set_fake_mine"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
   fake_landmines_sub_ =
       nh.subscribe(source, 10, &LandminesLayer::fakeLandminesCallback, this);

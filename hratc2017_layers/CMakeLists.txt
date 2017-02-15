@@ -19,8 +19,9 @@ include_directories(
 )
 
 add_library(hratc2017_layers
-  src/hratc2017/landmines_layer.cpp
   src/hratc2017/covered_area_layer.cpp
+  src/hratc2017/landmines_layer.cpp
+  src/hratc2017/obstacles_layer.cpp
 )
 
 target_link_libraries(hratc2017_layers ${catkin_LIBRARIES})
