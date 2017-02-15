@@ -24,6 +24,7 @@
 #include <tf/transform_datatypes.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
+#include <std_msgs/Bool.h>
 
 #define DEFAULT_MAP_COVERAGE_OFFSET 1.5
 
@@ -41,13 +42,15 @@ public:
 private:
   MoveBaseClient move_base_client_;
   ros::Subscriber corners_sub_;
+  ros::Subscriber start_scanning_sub_;
   Map* map_;
   std::queue<geometry_msgs::Point> waypoints_;
-  bool hasActiveGoal_;
+  bool has_active_goal_;
+  bool is_scanning_;
   virtual void controlLoop();
-  void createMap(ros::NodeHandle* nh);
   void createStrategy();
   void mapCornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
+  void startScanningCallback(const std_msgs::Bool::ConstPtr& msg);
   void goalDoneCallback(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResult::ConstPtr &result);
   void goalActiveCallback();
   void goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback);

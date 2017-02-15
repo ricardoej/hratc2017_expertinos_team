@@ -18,11 +18,16 @@ namespace hratc2017
 	 * @brief WaypointsController::WaypointsController
 	 * @param nh
 	 */
-	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 1), map_(NULL), move_base_client_("/move_base", true)
+	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true)
 	{
-		createMap(nh);
+		ROS_INFO("Subscribing to corners");
+		corners_sub_ = nh->subscribe("/corners", 100, &WaypointsController::mapCornersCallback, this);
 
-		hasActiveGoal_ = false;
+		ROS_INFO("Subscribing to start_scanning");
+		start_scanning_sub_ = nh->subscribe("/p3at/start_scanning", 100, &WaypointsController::startScanningCallback, this);
+
+		has_active_goal_ = false;
+		is_scanning_ = false;
 	}
 
 	/**
@@ -51,7 +56,12 @@ namespace hratc2017
 		}
 		else
 		{
-			if (map_ && !hasActiveGoal_ && waypoints_.size() > 0)
+			if (is_scanning_ && has_active_goal_)
+			{
+				move_base_client_.cancelAllGoals();
+				ROS_INFO("Cancel goals");
+			}
+			else if (map_ && !has_active_goal_ && waypoints_.size() > 0)
 			{
 				move_base_msgs::MoveBaseGoal goal;
 				goal.target_pose.header.frame_id = "map";
@@ -67,15 +77,6 @@ namespace hratc2017
 					boost::bind(&WaypointsController::goalFeedbackCallback, this, _1));			
 			}
 		}
-	}
-
-	/**
-	 * @brief WaypointsController::createMap creates the map with borders
-	 */
-	void WaypointsController::createMap(ros::NodeHandle* nh)
-	{
-		ROS_INFO("Subscribing to corners");
-		corners_sub_ = nh->subscribe("/corners", 100, &WaypointsController::mapCornersCallback, this);
 	}
 
 	/**
@@ -103,6 +104,20 @@ namespace hratc2017
 			map_->getRightBottomCorner().z);
 
 		createStrategy();
+	}
+
+	/**
+	 * @brief WaypointsController::startScanningCallback receives if the robot is scanning
+	 * @param msg is scanning?
+	 */
+	void WaypointsController::startScanningCallback(const std_msgs::Bool::ConstPtr& msg)
+	{
+		ROS_INFO("start_scanning %s", msg->data ? "TRUE" : "FALSE");
+		if (is_scanning_ != msg->data)
+		{
+			is_scanning_ = msg->data;
+			ROS_INFO("Is scanning? %s", is_scanning_ ? "TRUE" : "FALSE");
+		}
 	}
 
 	/**
@@ -171,9 +186,19 @@ namespace hratc2017
 	void WaypointsController::goalDoneCallback(const actionlib::SimpleClientGoalState& state, 
 		const move_base_msgs::MoveBaseResult::ConstPtr &result)
 	{
-	  ROS_INFO("Finished in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
-	  waypoints_.pop();
-	  hasActiveGoal_ = false;
+		ROS_INFO("Finished in state [%s]", state.toString().c_str());
+		if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+		{
+			ROS_INFO("Finished in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
+			waypoints_.pop();
+			has_active_goal_ = false;
+		}
+		else if (state == actionlib::SimpleClientGoalState::ABORTED || state == actionlib::SimpleClientGoalState::REJECTED
+			|| state == actionlib::SimpleClientGoalState::PREEMPTED)
+		{
+			ROS_INFO("Goal aborted or rejected");
+			has_active_goal_ = false;
+		}
 	}
 
 	/**
@@ -182,7 +207,7 @@ namespace hratc2017
 	void WaypointsController::goalActiveCallback()
 	{
 	  ROS_INFO("Goal just went active");
-	  hasActiveGoal_ = true;
+	  has_active_goal_ = true;
 	}
 
 	/**
@@ -190,7 +215,6 @@ namespace hratc2017
 	 */
 	void WaypointsController::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback)
 	{
-	  //ROS_INFO("Feedback [X]:%f [Y]:%f [W]: %f",
-	  //	feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w); 
+	  has_active_goal_ = move_base_client_.getState() == actionlib::SimpleClientGoalState::ACTIVE;
 	}
 }
