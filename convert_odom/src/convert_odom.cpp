@@ -6,7 +6,7 @@ ConvertOdom::ConvertOdom(ros::NodeHandle n)
 {
 
   ekf_odom_sub_ = n_.subscribe("robot_pose_ekf/odom",100, &ConvertOdom::ekfOdomCallback, this);
-  convertOdom_pub_ = n_.advertise<nav_msgs::Odometry>("p3at/odom_w_ekf",100);
+  convertOdom_pub_ = n_.advertise<nav_msgs::Odometry>("odom_w_ekf",100);
 
 }
 

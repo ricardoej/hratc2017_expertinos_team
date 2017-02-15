@@ -13,6 +13,7 @@
       <rosparam file="$(find hratc2017_entry)/config/twist_mux_params.yaml" command="load"/>
       <remap from="cmd_vel_out" to="cmd_vel"/>
     </node>
+    <node name="convert_odom" pkg="convert_odom" type="convert_odom"/>
   </group>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
     <arg name ="_rviz" value="$(arg _rviz)"/>

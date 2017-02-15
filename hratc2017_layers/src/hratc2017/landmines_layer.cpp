@@ -54,13 +54,13 @@ void LandminesLayer::onInitialize()
   nh.param("num_parts", num_parts_, 12);
   ROS_INFO("    Number of parts of landmine circumference: %d", num_parts_);
   std::string source;
+  current_ = true;
   nh.param("landmine_topic", source, std::string("/HRATC_FW/set_mine"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
-  nh.param("fake_landmine_topic", source, std::string("/HRATC_FW/set_fake_mine"));
-  ROS_INFO("    Subscribed to topic: %s", source.c_str());
-  current_ = true;
   landmines_sub_ =
       nh.subscribe(source, 10, &LandminesLayer::landminesCallback, this);
+  nh.param("fake_landmine_topic", source, std::string("/HRATC_FW/set_fake_mine"));
+  ROS_INFO("    Subscribed to topic: %s", source.c_str());
   fake_landmines_sub_ =
       nh.subscribe(source, 10, &LandminesLayer::fakeLandminesCallback, this);
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
