@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
   <node name="waypoints_controller" pkg="hratc2017_entry" type="waypoints_controller_node" output="screen">
+    <rosparam file="$(find hratc2017_entry)/config/waypoints_controller_params.yaml" command="load"/>
   </node>
 </launch>
