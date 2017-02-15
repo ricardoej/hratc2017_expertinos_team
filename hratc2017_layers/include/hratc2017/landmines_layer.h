@@ -41,7 +41,6 @@ private:
 
   ros::Subscriber landmines_sub_;
   ros::Subscriber fake_landmines_sub_;
-  bool new_landmine_;
   std::vector<geometry_msgs::Point> landmines_;
   std::vector<geometry_msgs::Point> fake_landmines_;
   double min_x_, min_y_, max_x_, max_y_;

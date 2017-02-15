@@ -40,7 +40,6 @@ private:
   void obstaclesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
   ros::Subscriber obstacles_sub_;
-  bool new_obstacle_;
   std::vector<geometry_msgs::Point> obstacles_;
   double min_x_, min_y_, max_x_, max_y_;
   int num_parts_;

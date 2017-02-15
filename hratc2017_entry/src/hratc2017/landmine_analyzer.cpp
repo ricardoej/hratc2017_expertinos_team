@@ -44,12 +44,12 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
   set_fake_mine_pub_ =
-      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 1);
+      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 10, true);
   set_mine_pub_ =
-      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 1);
+      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 10, true);
   polygon_pub_ =
-      nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 10);
-  pause_pub_ = nh->advertise<std_msgs::Bool>("start_scanning", 1);
+      nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 1);
+  pause_pub_ = nh->advertise<std_msgs::Bool>("start_scanning", 1, true);
   filtered_coils_pub_ = nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
   coils_sub_ =
       nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);

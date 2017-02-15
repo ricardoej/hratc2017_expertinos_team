@@ -85,7 +85,7 @@ void MetalScanner::controlLoop()
  * @brief MetalScanner::setNextState
  * @return
  */
-StateEnum MetalScanner::setNextState()
+void MetalScanner::setNextState()
 {
   switch (current_state_)
   {
@@ -127,11 +127,18 @@ StateEnum MetalScanner::setNextState()
     }
     break;
   case states::S5_MOVING_AWAY:
-    if (coils_.getLeft() < safe_coil_signal_ &&
-        coils_.getRight() < safe_coil_signal_)
+    if (coils_.getLeft() < safe_coil_signal_ && coils_.getRight() < safe_coil_signal_)
     {
-      setVelocity(0, 0);
+      s6_timer_ = ros::Time::now();
+      current_state_ = states::S6_CHANGING_DIRECTION;
       ROS_INFO("   S5 - State change!");
+
+    }
+    break;
+  case states::S6_CHANGING_DIRECTION:
+    if((ros::Time::now() - s6_timer_).toSec() > safe_time_)
+    {
+      ROS_INFO("   S6 - State change!");
       reset();
     }
     break;
@@ -155,7 +162,7 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S1 - Alinging!");
     error_ = coils_.getLeft() - coils_.getRight();
     wz = error_ * Kp_;
-    setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
+    setVelocity(0, wz * (fabs(wz) > wz ? wz / fabs(wz) : 1));
     break;
   case states::S2_SCANNING_FOWARD:
     ROS_DEBUG("   S2 - Scanning foward!");
@@ -163,15 +170,19 @@ void MetalScanner::setVelocity()
     break;
   case states::S3_SCANNING_LEFT:
     ROS_DEBUG("   S3 - Scanning left!");
-    setVelocity(0, wz_);
+    setVelocity(0, wz);
     break;
   case states::S4_SCANNING_RIGHT:
     ROS_DEBUG("   S4 - Scanning right!");
-    setVelocity(0, -wz_);
+    setVelocity(0, -wz);
     break;
   case states::S5_MOVING_AWAY:
     ROS_DEBUG("   S5 - Moving away!");
     setVelocity(-vx_, 0);
+    break;
+   case states::S6_CHANGING_DIRECTION:
+    ROS_DEBUG("   S6 - Moving away!");
+    setVelocity(0, wz);
     break;
   }
 }

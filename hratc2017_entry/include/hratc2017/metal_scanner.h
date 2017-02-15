@@ -42,7 +42,8 @@ enum StateEnum
   S2_SCANNING_FOWARD,
   S3_SCANNING_LEFT,
   S4_SCANNING_RIGHT,
-  S5_MOVING_AWAY
+  S5_MOVING_AWAY,
+  S6_CHANGING_DIRECTION
 };
 }
 
@@ -55,6 +56,7 @@ public:
   virtual ~MetalScanner();
 
 private:
+  ros::Time s6_timer_;
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber scanning_sub_;
@@ -73,7 +75,7 @@ private:
   double safe_time_;
   bool scanning_;
   virtual void controlLoop();
-  StateEnum setNextState();
+  void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
   void reset();

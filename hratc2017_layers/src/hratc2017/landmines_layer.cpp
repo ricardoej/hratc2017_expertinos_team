@@ -94,7 +94,7 @@ void LandminesLayer::updateBounds(double robot_x, double robot_y,
                                   double robot_yaw, double* min_x,
                                   double* min_y, double* max_x, double* max_y)
 {
-  if (!enabled_ || landmines_.empty())
+  if (!enabled_ || (landmines_.empty() && fake_landmines_.empty()))
   {
     return;
   }
@@ -115,7 +115,7 @@ void LandminesLayer::updateBounds(double robot_x, double robot_y,
 void LandminesLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i,
                                  int min_j, int max_i, int max_j)
 {
-  if (!enabled_ || landmines_.empty())
+  if (!enabled_ || (landmines_.empty() && fake_landmines_.empty()))
   {
     return;
   }
@@ -188,7 +188,7 @@ void LandminesLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i,
 void LandminesLayer::landminesCallback(
     const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-  ROS_DEBUG("Adding a new landmine at (%f, %f).", msg->pose.position.x,
+  ROS_INFO("Adding a new landmine at (%f, %f).", msg->pose.position.x,
             msg->pose.position.y);
   min_x_ = std::min(min_x_, msg->pose.position.x - radius_);
   min_y_ = std::min(min_y_, msg->pose.position.y - radius_);
@@ -204,7 +204,7 @@ void LandminesLayer::landminesCallback(
 void LandminesLayer::fakeLandminesCallback(
     const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-  ROS_DEBUG("Adding a new fake landmine at (%f, %f).", msg->pose.position.x,
+  ROS_INFO("Adding a new fake landmine at (%f, %f).", msg->pose.position.x,
             msg->pose.position.y);
   min_x_ = std::min(min_x_, msg->pose.position.x - msg->pose.position.z);
   min_y_ = std::min(min_y_, msg->pose.position.y - msg->pose.position.z);
