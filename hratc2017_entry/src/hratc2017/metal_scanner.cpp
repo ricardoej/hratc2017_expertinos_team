@@ -130,7 +130,7 @@ void MetalScanner::setNextState()
     if (coils_.getLeft() < safe_coil_signal_ && coils_.getRight() < safe_coil_signal_)
     {
       s6_timer_ = ros::Time::now();
-      current_state_ = states::S6_CHANGING_DIRECTION;
+      current_state_ = states::S0_SETTING_UP;
       ROS_INFO("   S5 - State change!");
 
     }

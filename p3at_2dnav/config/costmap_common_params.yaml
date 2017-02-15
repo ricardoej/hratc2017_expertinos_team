@@ -25,13 +25,8 @@ map_type: 'costmap'
 
 plugins:
 - {name: static_layer, type: 'costmap_2d::StaticLayer'}
-<<<<<<< HEAD
 #- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
 - {name: obstacles_layer, type: 'hratc2017::ObstaclesLayer'}
-=======
-- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
-#- {name: obstacles_layer, type: 'hratc2017::ObstacleLayer'}
->>>>>>> 2de29a83e46af5142c357b83948c724125c0e76b
 - {name: landmines_layer, type: 'hratc2017::LandminesLayer'}
 - {name: inflation_layer, type: 'costmap_2d::InflationLayer'}
 #- {name: covered_area_layer, type: 'hratc2017::CoveredAreaLayer'}
