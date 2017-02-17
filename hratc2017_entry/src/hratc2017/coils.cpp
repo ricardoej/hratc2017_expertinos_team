@@ -16,37 +16,8 @@ namespace hratc2017
 
 /**
  * @brief Coils::Coils
- * @param left
- * @param right
  */
-Coils::Coils(double threshold, int number_of_observations, float left,
-             float right)
-    : left_(left), right_(right), threshold_(threshold),
-      number_of_observations_(number_of_observations)
-{
-}
-
-/**
- * @brief Coils::Coils
- * @param msg
- */
-Coils::Coils(const metal_detector_msgs::Coil::ConstPtr& msg, double threshold,
-             int number_of_observations)
-    : left_(msg->left_coil), right_(msg->right_coil), threshold_(threshold),
-      number_of_observations_(number_of_observations)
-{
-}
-
-/**
- * @brief Coils::Coils
- * @param msg
- */
-Coils::Coils(const metal_detector_msgs::Coil& msg, double threshold,
-             int number_of_observations)
-    : left_(msg.left_coil), right_(msg.right_coil), threshold_(threshold),
-      number_of_observations_(number_of_observations)
-{
-}
+Coils::Coils() : left_("left"), right_("right") {}
 
 /**
  * @brief Coils::~Coils
@@ -54,25 +25,35 @@ Coils::Coils(const metal_detector_msgs::Coil& msg, double threshold,
 Coils::~Coils() {}
 
 /**
- * @brief Coils::getLeft
+ * @brief Coils::getLeftValue
  * @return
  */
-float Coils::getLeft() const { return left_; }
+float Coils::getLeftValue() const { return left_.getValue(); }
 
 /**
- * @brief Coils::getRight
+ * @brief Coils::getRightValue
  * @return
  */
-float Coils::getRight() const { return right_; }
+float Coils::getRightValue() const { return right_.getValue(); }
 
 /**
- * @brief Coils::setThreshold
- * @param threshold
+ * @brief Coils::setLowThreshold
+ * @param low_threshold
  */
-void Coils::setThreshold(double threshold)
+void Coils::setLowThreshold(double low_threshold)
 {
-  threshold_ =
-      threshold < 0 || threshold > 1.0 ? COIL_SIGNAL_THRESHOLD : threshold;
+  left_.setLowThreshold(low_threshold);
+  right_.setLowThreshold(low_threshold);
+}
+
+/**
+ * @brief Coils::setHighThreshold
+ * @param high_threshold
+ */
+void Coils::setHighThreshold(double high_threshold)
+{
+  left_.setHighThreshold(high_threshold);
+  right_.setHighThreshold(high_threshold);
 }
 
 /**
@@ -81,22 +62,84 @@ void Coils::setThreshold(double threshold)
  */
 void Coils::setNumberOfObservations(int number_of_observations)
 {
-  number_of_observations_ = number_of_observations > 0
-                                ? number_of_observations
-                                : COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS;
+  left_.setNumberOfObservations(number_of_observations);
+  right_.setNumberOfObservations(number_of_observations);
 }
 
 /**
- * @brief Coils::gotLandmineOnLeft
+ * @brief Coils::isLeftLow
  * @return
  */
-bool Coils::isHighCoilSignalOnLeft() const { return left_ >= threshold_; }
+bool Coils::isLeftLow() const { return left_.isLow(); }
 
 /**
- * @brief Coils::gotLandmineOnRight
+ * @brief Coils::isLeftHigh
  * @return
  */
-bool Coils::isHighCoilSignalOnRight() const { return right_ >= threshold_; }
+bool Coils::isLeftHigh() const { return left_.isHigh(); }
+
+/**
+ * @brief Coils::isRightLow
+ * @return
+ */
+bool Coils::isRightLow() const { return right_.isLow(); }
+
+/**
+ * @brief Coils::isRightHigh
+ * @return
+ */
+bool Coils::isRightHigh() const { return right_.isHigh(); }
+
+/**
+ * @brief Coils::isOneLow
+ * @return
+ */
+bool Coils::isOneLow() const { return left_.isLow() != right_.isLow(); }
+
+/**
+ * @brief Coils::isOneHigh
+ * @return
+ */
+bool Coils::isOneHigh() const { return left_.isHigh() != right_.isHigh(); }
+
+/**
+ * @brief Coils::isAnyLow
+ * @return
+ */
+bool Coils::isAnyLow() const { return left_.isLow() || right_.isLow(); }
+
+/**
+ * @brief Coils::isAnyHigh
+ * @return
+ */
+bool Coils::isAnyHigh() const { return left_.isHigh() || right_.isHigh(); }
+
+/**
+ * @brief Coils::isBothLow
+ * @return
+ */
+bool Coils::isBothLow() const { return left_.isLow() && right_.isLow(); }
+
+/**
+ * @brief Coils::isBothHigh
+ * @return
+ */
+bool Coils::isBothHigh() const { return left_.isHigh() && right_.isHigh(); }
+
+/**
+ * @brief Coils::isBothNotLow
+ * @return
+ */
+bool Coils::isBothNotLow() const { return !left_.isLow() && !right_.isLow(); }
+
+/**
+ * @brief Coils::isBothNotHigh
+ * @return
+ */
+bool Coils::isBothNotHigh() const
+{
+  return !left_.isHigh() && !right_.isHigh();
+}
 
 /**
  * @brief Coils::to_msg
@@ -106,8 +149,8 @@ metal_detector_msgs::Coil Coils::to_msg() const
 {
   metal_detector_msgs::Coil msg;
   msg.header.stamp = ros::Time::now();
-  msg.left_coil = left_;
-  msg.right_coil = right_;
+  msg.left_coil = left_.getValue();
+  msg.right_coil = right_.getValue();
   return msg;
 }
 
@@ -117,9 +160,7 @@ metal_detector_msgs::Coil Coils::to_msg() const
  */
 std::string Coils::str() const
 {
-  std::stringstream ss;
-  ss << "coil: (" << left_ << "," << right_ << ")";
-  return ss.str();
+  return "coils: (" + left_.str() + ", " + right_.str() + ")";
 }
 
 /**
@@ -155,29 +196,7 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
  */
 void Coils::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
 {
-  int counter(0);
-  float filtered_signal(0.0);
-  left_samples_.push_back(msg->left_coil);
-  for (int i(left_samples_.size() - 1); i >= 0; i--)
-  {
-    filtered_signal += left_samples_[i];
-    if (counter++ == number_of_observations_)
-    {
-      break;
-    }
-  }
-  left_ = filtered_signal / counter;
-  filtered_signal = 0;
-  counter = 0;
-  right_samples_.push_back(msg->right_coil);
-  for (int i(right_samples_.size() - 1); i >= 0; i--)
-  {
-    filtered_signal += right_samples_[i];
-    if (counter++ == number_of_observations_)
-    {
-      break;
-    }
-  }
-  right_ = filtered_signal / counter;
+  left_ = msg->left_coil;
+  right_ = msg->right_coil;
 }
 }

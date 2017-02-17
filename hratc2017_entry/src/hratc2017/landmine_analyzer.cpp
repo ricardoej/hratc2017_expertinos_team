@@ -26,14 +26,20 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
 {
   ros::NodeHandle pnh("~");
   double threshold;
-  pnh.param("coil_signal_threshold", threshold, COIL_SIGNAL_THRESHOLD);
-  coils_.setThreshold(threshold);
+  pnh.param("low_coil_signal_threshold", threshold, LOW_COIL_SIGNAL_THRESHOLD);
+  coils_.setLowThreshold(threshold);
+  ROS_INFO("   Low coil signal threshold: %f", threshold);
+  pnh.param("high_coil_signal_threshold", threshold,
+            HIGH_COIL_SIGNAL_THRESHOLD);
+  coils_.setHighThreshold(threshold);
+  ROS_INFO("   High coil signal threshold: %f", threshold);
   int number_of_observations;
-  pnh.param("coil_signal_filter_number_of_observations", number_of_observations, COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
+            COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
   coils_.setNumberOfObservations(number_of_observations);
-  ROS_INFO("   Coil signal threshold: %lf", threshold);
-  pnh.param("max_coil_signal", max_coil_singal_, MAX_COIL_SIGNAL);
-  ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
+  ROS_INFO("   Coil signal filter number of observations: %d", number_of_observations);
+  pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
+  ROS_INFO("   Max coil signal: %lf", max_coil_signal_);
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
   ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
   pnh.param("sampling_end_interval", sampling_end_interval_,
@@ -43,16 +49,16 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
-  set_fake_mine_pub_ =
-      nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 10, true);
+  set_fake_mine_pub_ = nh->advertise<geometry_msgs::PoseStamped>(
+      "/HRATC_FW/set_fake_mine", 10, true);
   set_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 10, true);
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 1);
   pause_pub_ = nh->advertise<std_msgs::Bool>("start_scanning", 1, true);
-  filtered_coils_pub_ = nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
-  coils_sub_ =
-      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
+  filtered_coils_pub_ =
+      nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
+  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   EMPTY_POSE.header.frame_id = "UNDEF";
   EMPTY_POSE.pose.position.x = 0;
   EMPTY_POSE.pose.position.y = 0;
@@ -81,7 +87,7 @@ LandmineAnalyzer::~LandmineAnalyzer()
 void LandmineAnalyzer::controlLoop()
 {
   publishFilteredCoilSignals();
-  if (!coils_.isHighCoilSignalOnLeft() && !coils_.isHighCoilSignalOnRight())
+  if (coils_.isBothNotHigh())
   {
     if (!sampling_)
     {
@@ -130,10 +136,10 @@ void LandmineAnalyzer::controlLoop()
         float divisor(0);
         for (int i = 0; i < landmine_.polygon.points.size();
              i++) // Como não fora setado um centro para o falso positivo,
-                  // obtém-se seu valor pela média ponderada pela intensidade do
-                  // sinal (colocada na coordenada z do landmine_.polygon.points
-                  // - linhas 157 e 166), dos pontos encontrados na área de
-                  // sinal elevado.
+        // obtém-se seu valor pela média ponderada pela intensidade do
+        // sinal (colocada na coordenada z do landmine_.polygon.points
+        // - linhas 157 e 166), dos pontos encontrados na área de
+        // sinal elevado.
         {
           mine_center_.x +=
               landmine_.polygon.points[i].x * landmine_.polygon.points[i].z;
@@ -156,40 +162,36 @@ void LandmineAnalyzer::controlLoop()
                  mine_center_.y);
       }
       reset();
-
     }
     return;
   }
-  //é necessário ficar publicando para twist_mux travar o navigation constantemente
+  //é necessário ficar publicando para twist_mux travar o navigation
+  //constantemente
   sampling_ = true;
   setScanning(true);
-
   landmine_.header.stamp = ros::Time::now();
-
   geometry_msgs::PoseStamped coil_pose;
   geometry_msgs::Point32 p;
-  if (coils_.isHighCoilSignalOnLeft())
+  if (coils_.isLeftHigh())
   {
     coil_pose = getLeftCoilPose();
     p.x = coil_pose.pose.position.x;
     p.y = coil_pose.pose.position.y;
-    p.z = coils_.getLeft(); // O peso (valor do sinal) no ponto foi salvo na
-                            // cordenada z para se obter uma média ponderada.
+    p.z = coils_.getLeftValue(); // O peso (valor do sinal) no ponto foi salvo na
+                                 // cordenada z para se obter uma média ponderada.
     landmine_.polygon.points.push_back(p);
   }
-
-  if (coils_.isHighCoilSignalOnRight())
+  if (coils_.isRightHigh())
   {
     coil_pose = getRightCoilPose();
     p.x = coil_pose.pose.position.x;
     p.y = coil_pose.pose.position.y;
-    p.z = coils_.getRight(); // O peso (valor do sinal) no ponto foi salvo na
-                             // cordenada z para se obter uma média ponderada.
+    p.z = coils_.getRightValue(); // O peso (valor do sinal) no ponto foi salvo na
+                                  // cordenada z para se obter uma média ponderada.
     landmine_.polygon.points.push_back(p);
   }
-
-  if (coils_.getLeft() >= max_coil_singal_ * alignment_tolerance_ &&
-      coils_.getRight() >= max_coil_singal_ * alignment_tolerance_)
+  if (fabs(max_coil_signal_ - coils_.getLeftValue()) <= alignment_tolerance_ &&
+      fabs(max_coil_signal_ - coils_.getRightValue()) <= alignment_tolerance_)
   {
     ROS_INFO("Possible mine found on both coils!!!");
     p_max_left_.x = getLeftCoilPose().pose.position.x;
@@ -199,12 +201,11 @@ void LandmineAnalyzer::controlLoop()
     possible_mine_found_ = true;
     max_signal_found_in_both_ = true;
   }
-
   else
   {
     if (!max_signal_found_in_both_)
     {
-      if(coils_.getLeft() >= max_coil_singal_)
+      if (coils_.getLeftValue() >= max_coil_signal_)
       {
         ROS_INFO("Possible mine found in left coil!!!");
         p_max_left_.x = getLeftCoilPose().pose.position.x;
@@ -214,7 +215,7 @@ void LandmineAnalyzer::controlLoop()
         possible_mine_found_ = true;
       }
 
-      if(coils_.getRight() >= max_coil_singal_)
+      if (coils_.getRightValue() >= max_coil_signal_)
       {
         ROS_INFO("Possible mine found on right coil!!!");
         p_max_left_.x = getRightCoilPose().pose.position.x;
@@ -386,11 +387,7 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
  */
 void LandmineAnalyzer::publishFilteredCoilSignals() const
 {
-  metal_detector_msgs::Coil msg;
-  msg.header.stamp = ros::Time::now();
-  msg.left_coil = coils_.getLeft();
-  msg.right_coil = coils_.getRight();
-  filtered_coils_pub_.publish(msg);
+  filtered_coils_pub_.publish(coils_.to_msg());
 }
 
 /**

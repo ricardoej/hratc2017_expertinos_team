@@ -1,7 +1,8 @@
-coil_signal_threshold: 0.5
-coil_signal_filter_number_of_observations: 5
+low_coil_signal_threshold: 0.45
+high_coil_signal_threshold: 0.65
+coil_signal_filter_number_of_observations: 10
 sampling_end_interval: 3.0
 max_coil_signal: 1.0
-alignment_tolerance: 0.95
+alignment_tolerance: 0.05
 minimal_signal_radius: 0.15
 maximal_signal_radius: 0.55

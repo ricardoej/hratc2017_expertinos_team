@@ -26,11 +26,18 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
 {
   ros::NodeHandle pnh("~");
   double threshold;
-  pnh.param("coil_signal_threshold", threshold, COIL_SIGNAL_THRESHOLD);
-  coils_.setThreshold(threshold);
+  pnh.param("low_coil_signal_threshold", threshold, LOW_COIL_SIGNAL_THRESHOLD);
+  coils_.setLowThreshold(threshold);
+  ROS_INFO("   Low coil signal threshold: %f", threshold);
+  pnh.param("high_coil_signal_threshold", threshold,
+            HIGH_COIL_SIGNAL_THRESHOLD);
+  coils_.setHighThreshold(threshold);
+  ROS_INFO("   High coil signal threshold: %f", threshold);
   int number_of_observations;
-  pnh.param("coil_signal_filter_number_of_observations", number_of_observations, COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
+            COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
   coils_.setNumberOfObservations(number_of_observations);
+  ROS_INFO("   Coil signal filter number of observations: %d", number_of_observations);
   pnh.param("linear_velocity_x", vx_, LINEAR_VELOCITY_X);
   ROS_INFO("   Linear velocity x: %f", vx_);
   pnh.param("angular_velocity_z", wz_, ANGULAR_VELOCITY_Z);
@@ -91,54 +98,53 @@ void MetalScanner::setNextState()
   {
   case states::S0_SETTING_UP:
     ref_coil_signal_ = min_coil_signal_ - coil_signal_increment_;
-    ROS_INFO("   S0 - Change State!");
+    ROS_INFO("   State change (from S0 to S1)!");
     current_state_ = states::S1_ALINGING;
     break;
   case states::S1_ALINGING:
     if (fabs(error_) <= coil_signal_tolerance_)
     {
       ref_coil_signal_ += coil_signal_increment_;
-      ROS_INFO("   S1 - State change!");
+      ROS_INFO("   State change (from S1 to S2 or S5)!");
       current_state_ = ref_coil_signal_ <= max_coil_signal_
                            ? states::S2_SCANNING_FOWARD
                            : states::S5_MOVING_AWAY;
     }
     break;
   case states::S2_SCANNING_FOWARD:
-    if (coils_.getLeft() >= ref_coil_signal_ ||
-        coils_.getRight() >= ref_coil_signal_)
+    if (coils_.getLeftValue() >= ref_coil_signal_ ||
+        coils_.getRightValue() >= ref_coil_signal_)
     {
-      ROS_INFO("   S2 - State change!");
+      ROS_INFO("   State change (from S2 to S3)!");
       current_state_ = states::S3_SCANNING_LEFT;
     }
     break;
   case states::S3_SCANNING_LEFT:
-    if (!coils_.isHighCoilSignalOnLeft())
+    if (!coils_.isLeftHigh())
     {
-      ROS_INFO("   S3 - State change!");
+      ROS_INFO("   State change (from S3 to S4)!");
       current_state_ = states::S4_SCANNING_RIGHT;
     }
     break;
   case states::S4_SCANNING_RIGHT:
-    if (!coils_.isHighCoilSignalOnRight())
+    if (!coils_.isRightHigh())
     {
-      ROS_INFO("   S4 - State change!");
+      ROS_INFO("   State change (from S4 to S1)!");
       current_state_ = states::S1_ALINGING;
     }
     break;
   case states::S5_MOVING_AWAY:
-    if (coils_.getLeft() < safe_coil_signal_ && coils_.getRight() < safe_coil_signal_)
+    if (coils_.isBothLow())
     {
       s6_timer_ = ros::Time::now();
+      ROS_INFO("   State change (from S5 to S6)!");
       current_state_ = states::S6_CHANGING_DIRECTION;
-      ROS_INFO("   S5 - State change!");
-
     }
     break;
   case states::S6_CHANGING_DIRECTION:
-    if((ros::Time::now() - s6_timer_).toSec() > safe_time_)
+    if ((ros::Time::now() - s6_timer_).toSec() > safe_time_)
     {
-      ROS_INFO("   S6 - State change!");
+      ROS_INFO("   State change (from S6 to S0)!");
       reset();
     }
     break;
@@ -151,7 +157,6 @@ void MetalScanner::setNextState()
 void MetalScanner::setVelocity()
 {
   double wz;
-
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
@@ -160,7 +165,7 @@ void MetalScanner::setVelocity()
     break;
   case states::S1_ALINGING: // P controller is implemented here
     ROS_DEBUG("   S1 - Alinging!");
-    error_ = coils_.getLeft() - coils_.getRight();
+    error_ = coils_.getLeftValue() - coils_.getRightValue();
     wz = error_ * Kp_;
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
     break;
@@ -180,7 +185,7 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S5 - Moving away!");
     setVelocity(-vx_, 0);
     break;
-   case states::S6_CHANGING_DIRECTION:
+  case states::S6_CHANGING_DIRECTION:
     ROS_DEBUG("   S6 - Moving away!");
     setVelocity(0, wz_);
     break;
@@ -206,7 +211,7 @@ void MetalScanner::setVelocity(double vx, double wz)
  */
 void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
 {
-  if(scanning_ != msg->data)
+  if (scanning_ != msg->data)
   {
     scanning_ = msg->data;
     ROS_INFO("   scanning: %s", scanning_ ? "true" : "false");
@@ -215,7 +220,6 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
       reset();
     }
   }
-
 }
 
 /**
@@ -225,6 +229,6 @@ void MetalScanner::reset()
 {
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
-  setVelocity(0,0);
+  setVelocity(0, 0);
 }
 }

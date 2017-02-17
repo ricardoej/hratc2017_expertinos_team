@@ -25,7 +25,7 @@
 
 #define SAMPLING_END_INTERVAL 2.0
 #define MAX_COIL_SIGNAL 0.9
-#define ALIGNMENT_TOLERANCE 0.95
+#define ALIGNMENT_TOLERANCE 0.05
 #define MIN_SIGNAL_RADIUS 0.15
 #define MAX_SIGNAL_RADIUS 0.55
 
@@ -52,7 +52,7 @@ private:
   bool possible_mine_found_;
   bool sampling_;
   double sampling_end_interval_;
-  double max_coil_singal_;
+  double max_coil_signal_;
   double alignment_tolerance_;
   double min_signal_radius_;
   double max_signal_radius_;
