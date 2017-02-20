@@ -1,7 +1,7 @@
 /**
  *  This header file defines the Coil class.
  *
- *  Version: 0.1.0
+ *  Version: 1.0.1
  *  Created on: 16/01/2017
  *  Modified on: 16/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)

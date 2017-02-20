@@ -2,7 +2,7 @@
  *  This source file implements the Coil class. This class encapsulates helpers
  *methods that evaluates metal detector readings.
  *
- *  Version: 0.1.0
+ *  Version: 1.0.1
  *  Created on: 16/02/2017
  *  Modified on: 16/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
@@ -10,7 +10,6 @@
  */
 
 #include "hratc2017/coil.h"
-#include <ros/ros.h>
 
 namespace hratc2017
 {

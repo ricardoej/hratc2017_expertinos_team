@@ -2,9 +2,9 @@
  *  This source file implements the Coils class. This class encapsulates helpers
  *methods that evaluates metal detector readings.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.1
  *  Created on: 30/01/2017
- *  Modified on: 14/02/2017
+ *  Modified on: 20/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -17,12 +17,40 @@ namespace hratc2017
 /**
  * @brief Coils::Coils
  */
-Coils::Coils() : left_("left"), right_("right") {}
+Coils::Coils() : left_("left_coil"), right_("right_coil"), tf_(NULL)
+{
+  EMPTY_POSE.header.frame_id = "UNDEF";
+  EMPTY_POSE.pose.position.x = 0;
+  EMPTY_POSE.pose.position.y = 0;
+  EMPTY_POSE.pose.position.z = 0;
+  EMPTY_POSE.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+}
+
+/**
+ * @brief Coils::Coils
+ * @param tf
+ */
+Coils::Coils(tf::TransformListener* tf)
+    : left_("left_coil"), right_("right_coil"), tf_(tf)
+{
+  EMPTY_POSE.header.frame_id = "UNDEF";
+  EMPTY_POSE.pose.position.x = 0;
+  EMPTY_POSE.pose.position.y = 0;
+  EMPTY_POSE.pose.position.z = 0;
+  EMPTY_POSE.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+}
 
 /**
  * @brief Coils::~Coils
  */
-Coils::~Coils() {}
+Coils::~Coils()
+{
+  if (tf_)
+  {
+    delete tf_;
+    tf_ = NULL;
+  }
+}
 
 /**
  * @brief Coils::getLeftValue
@@ -198,5 +226,58 @@ void Coils::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
 {
   left_ = msg->left_coil;
   right_ = msg->right_coil;
+}
+
+/**
+ * @brief Coils::getLeftPose
+ * @return
+ */
+geometry_msgs::PoseStamped Coils::getLeftPose() const
+{
+  return getPose(left_.getFrameId());
+}
+
+/**
+ * @brief Coils::getRightPose
+ * @return
+ */
+geometry_msgs::PoseStamped Coils::getRightPose() const
+{
+  return getPose(right_.getFrameId());
+}
+
+/**
+ * @brief Coils::getPose
+ * @param coil
+ * @return
+ */
+geometry_msgs::PoseStamped Coils::getPose(std::string frame_id) const
+{
+  if (!tf_)
+  {
+    return EMPTY_POSE;
+  }
+  geometry_msgs::PoseStamped pose;
+  tf::StampedTransform transform;
+  ros::Time now(ros::Time::now());
+  try
+  {
+    tf_->waitForTransform(MINEFIELD_FRAME_ID, frame_id, now,
+                          ros::Duration(2.0));
+    tf_->lookupTransform(MINEFIELD_FRAME_ID, frame_id, now, transform);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_ERROR("%s", ex.what());
+    // tem que tratar melhor essa excessao!!!
+    return EMPTY_POSE;
+  }
+  pose.header.frame_id = frame_id;
+  pose.header.stamp = ros::Time::now();
+  pose.pose.position.x = transform.getOrigin().x();
+  pose.pose.position.y = transform.getOrigin().y();
+  pose.pose.position.z = transform.getOrigin().z();
+  pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  return pose;
 }
 }
