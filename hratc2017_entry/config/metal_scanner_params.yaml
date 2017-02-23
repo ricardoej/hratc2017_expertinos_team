@@ -1,7 +1,8 @@
-coil_signal_threshold: 0.9
-coil_signal_filter_number_of_observations: 3
-linear_velocity_x: 0.2
-angular_velocity_z: 0.6
+low_coil_signal_threshold: 0.5
+high_coil_signal_threshold: 0.9
+coil_signal_filter_number_of_observations: 4
+linear_velocity_x: 0.1
+angular_velocity_z: 0.3
 Kp: 1.0
 min_coil_signal: 0.6
 max_coil_signal: 1.0
