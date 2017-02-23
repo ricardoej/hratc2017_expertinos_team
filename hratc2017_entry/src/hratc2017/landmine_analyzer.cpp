@@ -32,8 +32,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   pnh.param("coil_signal_filter_number_of_observations", number_of_observations, COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
   coils_.setNumberOfObservations(number_of_observations);
   ROS_INFO("   Coil signal threshold: %lf", threshold);
-  pnh.param("max_coil_signal", max_coil_singal_, MAX_COIL_SIGNAL);
-  ROS_INFO("   Max coil signal: %lf", max_coil_singal_);
+  pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
+  ROS_INFO("   Max coil signal: %lf", max_coil_signal_);
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
   ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
   pnh.param("sampling_end_interval", sampling_end_interval_,
@@ -43,6 +43,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh) : ROSNode(nh, 30), tf_()
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
+  pnh.param("landmine_radius", landmine_radius_, LANDMINE_RADIUS);
+  ROS_INFO("   Landmine radius: %f", landmine_radius_);
   set_fake_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_fake_mine", 10, true);
   set_mine_pub_ =
@@ -160,6 +162,14 @@ void LandmineAnalyzer::controlLoop()
     }
     return;
   }
+  if(isKnownLandmine())
+  {
+    if(sampling_)
+      reset();
+    return;
+
+  }
+
   //é necessário ficar publicando para twist_mux travar o navigation constantemente
   sampling_ = true;
   setScanning(true);
@@ -188,8 +198,8 @@ void LandmineAnalyzer::controlLoop()
     landmine_.polygon.points.push_back(p);
   }
 
-  if (coils_.getLeft() >= max_coil_singal_ * alignment_tolerance_ &&
-      coils_.getRight() >= max_coil_singal_ * alignment_tolerance_)
+  if (coils_.getLeft() >= max_coil_signal_ * alignment_tolerance_ &&
+      coils_.getRight() >= max_coil_signal_ * alignment_tolerance_)
   {
     ROS_INFO("Possible mine found on both coils!!!");
     p_max_left_.x = getLeftCoilPose().pose.position.x;
@@ -204,7 +214,7 @@ void LandmineAnalyzer::controlLoop()
   {
     if (!max_signal_found_in_both_)
     {
-      if(coils_.getLeft() >= max_coil_singal_)
+      if(coils_.getLeft() >= max_coil_signal_)
       {
         ROS_INFO("Possible mine found in left coil!!!");
         p_max_left_.x = getLeftCoilPose().pose.position.x;
@@ -214,7 +224,7 @@ void LandmineAnalyzer::controlLoop()
         possible_mine_found_ = true;
       }
 
-      if(coils_.getRight() >= max_coil_singal_)
+      if(coils_.getRight() >= max_coil_signal_)
       {
         ROS_INFO("Possible mine found on right coil!!!");
         p_max_left_.x = getRightCoilPose().pose.position.x;
@@ -350,7 +360,7 @@ geometry_msgs::PoseStamped LandmineAnalyzer::getRightCoilPose() const
  * @param x
  * @param y
  */
-void LandmineAnalyzer::publishLandminePose(double x, double y) const
+void LandmineAnalyzer::publishLandminePose(double x, double y)
 {
   geometry_msgs::PoseStamped msg;
   msg.header.stamp = ros::Time::now();
@@ -359,6 +369,7 @@ void LandmineAnalyzer::publishLandminePose(double x, double y) const
   msg.pose.position.y = y;
   msg.pose.position.z = 0.0;
   msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  real_landmines_.push_back(msg.pose.position);
   set_mine_pub_.publish(msg);
 }
 
@@ -391,6 +402,24 @@ void LandmineAnalyzer::publishFilteredCoilSignals() const
   msg.left_coil = coils_.getLeft();
   msg.right_coil = coils_.getRight();
   filtered_coils_pub_.publish(msg);
+}
+
+bool LandmineAnalyzer::isKnownLandmine() const
+{
+  if(real_landmines_.empty())
+    return false;
+  geometry_msgs::PoseStamped coil_pose(getCoilPose(coils_.isHighCoilSignalOnLeft()));
+  double delta_x, delta_y;
+
+  for(int i=0; i<real_landmines_.size(); i++){
+    delta_x = coil_pose.pose.position.x - real_landmines_[i].x;
+    delta_y = coil_pose.pose.position.y - real_landmines_[i].y;
+    if(pow(delta_x, 2)+pow(delta_y,2) <= pow(landmine_radius_,2) ){
+      ROS_INFO("already known landmine");
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

@@ -1,4 +1,4 @@
-image: empty_world3.pgm
+image: empty_world.pgm
 resolution: 0.050000
 origin: [-5.200000, -5.200000, 0]
 negate: 0

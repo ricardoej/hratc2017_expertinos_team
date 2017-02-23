@@ -3,7 +3,7 @@ covered_area_layer:
 
 landmines_layer:
   num_parts: 18
-  radius: 0.5
+  radius: 0.3
   landmines_topic: '/HRATC_FW/set_mine'
   fake_landmines_topic: '/HRATC_FW/set_fake_mine'
 

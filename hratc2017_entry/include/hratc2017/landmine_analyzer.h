@@ -22,12 +22,14 @@
 #include "utilities/ros_node.h"
 #include "hratc2017/coils.h"
 #include <std_msgs/Bool.h>
+#include <vector>
 
 #define SAMPLING_END_INTERVAL 2.0
 #define MAX_COIL_SIGNAL 0.9
 #define ALIGNMENT_TOLERANCE 0.95
 #define MIN_SIGNAL_RADIUS 0.15
 #define MAX_SIGNAL_RADIUS 0.55
+#define LANDMINE_RADIUS 0.45
 
 namespace hratc2017
 {
@@ -52,13 +54,15 @@ private:
   bool possible_mine_found_;
   bool sampling_;
   double sampling_end_interval_;
-  double max_coil_singal_;
+  double max_coil_signal_;
   double alignment_tolerance_;
   double min_signal_radius_;
   double max_signal_radius_;
-  geometry_msgs::Point32 p_max_left_;
-  geometry_msgs::Point32 p_max_right_;
-  geometry_msgs::Point32 mine_center_;
+  double landmine_radius_;
+  geometry_msgs::Point p_max_left_;
+  geometry_msgs::Point p_max_right_;
+  geometry_msgs::Point mine_center_;
+  std::vector<geometry_msgs::Point> real_landmines_;
   geometry_msgs::PoseStamped EMPTY_POSE;
   virtual void controlLoop();
   void landmineDetected(bool left_coil = true) const;
@@ -67,9 +71,10 @@ private:
   geometry_msgs::PoseStamped getCoilPose(bool left_coil = true) const;
   geometry_msgs::PoseStamped getLeftCoilPose() const;
   geometry_msgs::PoseStamped getRightCoilPose() const;
-  void publishLandminePose(double x, double y) const;
+  void publishLandminePose(double x, double y);
   void publishFakeLandminePose(double x, double y, double radius) const;
   void publishFilteredCoilSignals() const;
+  bool isKnownLandmine() const;
   geometry_msgs::PolygonStamped landmine_;
   void setScanning(bool scanning);
   void reset();
