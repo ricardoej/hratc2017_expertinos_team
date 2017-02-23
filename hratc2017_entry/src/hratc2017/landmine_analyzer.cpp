@@ -51,7 +51,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
   ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
   pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
-  pnh.param("landmine_radius", landmine_radius_ , LANDMINE_RADIUS);
+  pnh.param("landmine_radius", landmine_radius_, LANDMINE_RADIUS);
   ROS_INFO("   Landmine radius: %f", landmine_radius_);
   set_fake_mine_pub_ = nh->advertise<geometry_msgs::PoseStamped>(
       "/HRATC_FW/set_fake_mine", 10, true);
@@ -163,6 +163,14 @@ void LandmineAnalyzer::controlLoop()
     }
     return;
   }
+  if (isKnownLandmine())
+  {
+    if (sampling_)
+    {
+      reset();
+    }
+    return;
+  }
 
   //é necessário ficar publicando para twist_mux travar o navigation
   // constantemente
@@ -205,22 +213,27 @@ void LandmineAnalyzer::controlLoop()
     possible_mine_found_ = true;
     max_signal_found_in_both_ = true;
   }
-  else
+  else if (!max_signal_found_in_both_)
   {
-    if (!max_signal_found_in_both_)
+    if (fabs(max_coil_signal_ - coils_.getLeftValue()) <= alignment_tolerance_)
     {
-      if (coils_.getLeftValue() >= max_coil_signal_ ||
-          coils_.getRightValue() >= max_coil_signal_)
-      {
-        ROS_INFO("Possible mine found in left coil!!!");
-        coil_pose = coils_.getLeftPose();
-        p_max_left_.x = coil_pose.pose.position.x;
-        p_max_left_.y = coil_pose.pose.position.y;
-        coil_pose = coils_.getRightPose();
-        p_max_right_.x = coil_pose.pose.position.x;
-        p_max_right_.y = coil_pose.pose.position.y;
-        possible_mine_found_ = true;
-      }
+      ROS_INFO("Possible mine found in left coil!!!");
+      coil_pose = coils_.getLeftPose();
+      p_max_left_.x = coil_pose.pose.position.x;
+      p_max_left_.y = coil_pose.pose.position.y;
+      p_max_right_.x = coil_pose.pose.position.x;
+      p_max_right_.y = coil_pose.pose.position.y;
+      possible_mine_found_ = true;
+    }
+    if (fabs(max_coil_signal_ - coils_.getRightValue()) <= alignment_tolerance_)
+    {
+      ROS_INFO("Possible mine found on right coil!!!");
+      coil_pose = coils_.getRightPose();
+      p_max_left_.x = coil_pose.pose.position.x;
+      p_max_left_.y = coil_pose.pose.position.y;
+      p_max_right_.x = coil_pose.pose.position.x;
+      p_max_right_.y = coil_pose.pose.position.y;
+      possible_mine_found_ = true;
     }
   }
   polygon_pub_.publish(landmine_);
@@ -273,21 +286,27 @@ void LandmineAnalyzer::publishFilteredCoilSignals() const
 
 bool LandmineAnalyzer::isKnownLandmine() const
 {
-  if(real_landmines_.empty())
+  if (real_landmines_.empty())
+  {
     return false;
+  }
   geometry_msgs::PoseStamped coil_pose;
-  if(coils_.isLeftHigh())
+  if (coils_.isLeftHigh())
   {
     coil_pose = coils_.getLeftPose();
-  }else{
+  }
+  else
+  {
     coil_pose = coils_.getRightPose();
   }
   double delta_x, delta_y;
 
-  for(int i=0; i<real_landmines_.size(); i++){
+  for (int i = 0; i < real_landmines_.size(); i++)
+  {
     delta_x = coil_pose.pose.position.x - real_landmines_[i].x;
     delta_y = coil_pose.pose.position.y - real_landmines_[i].y;
-    if(pow(delta_x, 2)+pow(delta_y,2) <= pow(landmine_radius_,2) ){
+    if (pow(delta_x, 2) + pow(delta_y, 2) <= pow(landmine_radius_, 2))
+    {
       ROS_INFO("already known landmine");
       return true;
     }
