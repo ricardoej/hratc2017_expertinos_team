@@ -2,9 +2,9 @@
  *  This header file defines the LandmineAnalyzer class, which is based
  *on the ROSNode class. It controls the landmine_analyzer_node.
  *
- *  Version: 1.0.1
+ *  Version: 1.0.2
  *  Created on: 30/01/2017
- *  Modified on: 20/02/2017
+ *  Modified on: 24/02/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -44,7 +44,7 @@ private:
   ros::Publisher filtered_coils_pub_;
   ros::Subscriber coils_sub_;
   Coils coils_;
-  std::vector<geometry_msgs::Point> real_landmines_;
+  std::vector<geometry_msgs::Point> known_landmines_;
   bool max_signal_found_in_both_;
   bool paused_;
   bool possible_mine_found_;
@@ -60,7 +60,7 @@ private:
   geometry_msgs::Point32 mine_center_;
   virtual void controlLoop();
   void publishLandminePose(double x, double y);
-  void publishFakeLandminePose(double x, double y, double radius) const;
+  void publishFakeLandminePose(double x, double y, double radius);
   void publishFilteredCoilSignals() const;
   bool isKnownLandmine() const;
   geometry_msgs::PolygonStamped landmine_;

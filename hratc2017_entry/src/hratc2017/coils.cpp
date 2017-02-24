@@ -16,18 +16,6 @@ namespace hratc2017
 
 /**
  * @brief Coils::Coils
- */
-Coils::Coils() : left_("left_coil"), right_("right_coil"), tf_(NULL)
-{
-  EMPTY_POSE.header.frame_id = "UNDEF";
-  EMPTY_POSE.pose.position.x = 0;
-  EMPTY_POSE.pose.position.y = 0;
-  EMPTY_POSE.pose.position.z = 0;
-  EMPTY_POSE.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-}
-
-/**
- * @brief Coils::Coils
  * @param tf
  */
 Coils::Coils(tf::TransformListener* tf)
@@ -54,18 +42,18 @@ Coils::~Coils()
 
 /**
  * @brief Coils::getLeftValue
- * @return
+ * @return the left coil's current filtered signal
  */
 float Coils::getLeftValue() const { return left_.getValue(); }
 
 /**
  * @brief Coils::getRightValue
- * @return
+ * @return the right coil's current filtered signal
  */
 float Coils::getRightValue() const { return right_.getValue(); }
 
 /**
- * @brief Coils::setLowThreshold
+ * @brief Coils::setLowThreshold sets the new desired low threshold.
  * @param low_threshold
  */
 void Coils::setLowThreshold(double low_threshold)
@@ -75,7 +63,7 @@ void Coils::setLowThreshold(double low_threshold)
 }
 
 /**
- * @brief Coils::setHighThreshold
+ * @brief Coils::setHighThreshold sets the new desired high threshold.
  * @param high_threshold
  */
 void Coils::setHighThreshold(double high_threshold)
@@ -85,7 +73,8 @@ void Coils::setHighThreshold(double high_threshold)
 }
 
 /**
- * @brief Coils::setNumberOfObservations
+ * @brief Coils::setNumberOfObservations sets the number of considered samples
+ * in the filter.
  * @param number_of_observations
  */
 void Coils::setNumberOfObservations(int number_of_observations)
@@ -95,73 +84,85 @@ void Coils::setNumberOfObservations(int number_of_observations)
 }
 
 /**
- * @brief Coils::isLeftLow
+ * @brief Coils::isLeftLow verifies if the left coil's current signal is beneath
+ * the low threshold.
  * @return
  */
 bool Coils::isLeftLow() const { return left_.isLow(); }
 
 /**
- * @brief Coils::isLeftHigh
+ * @brief Coils::isLeftHigh verifies if the left coil's current signal is above
+ * the high threshold.
  * @return
  */
 bool Coils::isLeftHigh() const { return left_.isHigh(); }
 
 /**
- * @brief Coils::isRightLow
+ * @brief Coils::isRightLow verifies if the right coil's current signal is
+ * beneath the low threshold.
  * @return
  */
 bool Coils::isRightLow() const { return right_.isLow(); }
 
 /**
- * @brief Coils::isRightHigh
+ * @brief Coils::isRightHigh verifies if the right coil's current signal is
+ * above the high threshold.
  * @return
  */
 bool Coils::isRightHigh() const { return right_.isHigh(); }
 
 /**
- * @brief Coils::isOneLow
+ * @brief Coils::isOneLow verifies if one and only one coil's current signal is
+ * beneath the low threshold.
  * @return
  */
 bool Coils::isOneLow() const { return left_.isLow() != right_.isLow(); }
 
 /**
- * @brief Coils::isOneHigh
+ * @brief Coils::isOneHigh verifies if one and only one coil's current signal is
+ * above the high threshold.
  * @return
  */
 bool Coils::isOneHigh() const { return left_.isHigh() != right_.isHigh(); }
 
 /**
- * @brief Coils::isAnyLow
+ * @brief Coils::isAnyLow verifies if current signal of left or right coil is
+ * beneath the low threshold.
  * @return
  */
 bool Coils::isAnyLow() const { return left_.isLow() || right_.isLow(); }
 
 /**
- * @brief Coils::isAnyHigh
+ * @brief Coils::isAnyHigh verifies if current signal of left or right coil is
+ * above the high threshold.
  * @return
  */
 bool Coils::isAnyHigh() const { return left_.isHigh() || right_.isHigh(); }
 
 /**
- * @brief Coils::isBothLow
+ * @brief Coils::isBothLow verifies if current signal of both coils are beneath
+ * the low threshold.
  * @return
  */
 bool Coils::isBothLow() const { return left_.isLow() && right_.isLow(); }
 
 /**
- * @brief Coils::isBothHigh
+ * @brief Coils::isBothHigh verifies if current signal of both coils are above
+ * the high threshold.
  * @return
  */
 bool Coils::isBothHigh() const { return left_.isHigh() && right_.isHigh(); }
 
 /**
- * @brief Coils::isBothNotLow
+ * @brief Coils::isBothNotLow verifies if current signal of both coils are not
+ * beneath the low threshold.
  * @return
  */
 bool Coils::isBothNotLow() const { return !left_.isLow() && !right_.isLow(); }
 
 /**
- * @brief Coils::isBothNotHigh
+ * @brief Coils::isBothNotHigh verifies if current signal of both coils are not
+ * above the high threshold.
  * @return
  */
 bool Coils::isBothNotHigh() const

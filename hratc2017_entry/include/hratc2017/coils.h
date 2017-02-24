@@ -27,8 +27,7 @@ namespace hratc2017
 class Coils
 {
 public:
-  Coils();
-  Coils(tf::TransformListener* tf);
+  Coils(tf::TransformListener* tf = NULL);
   virtual ~Coils();
   float getLeftValue() const;
   float getRightValue() const;
