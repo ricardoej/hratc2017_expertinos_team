@@ -1,78 +1,168 @@
 /**
- *  This header file defines the Map class. This class encapsulates helpers
- *  methods that evaluates metal detector readings.
+ *  This source file implments the Map class.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.1
  *  Created on: 06/02/2017
- *  Modified on: 06/02/2017
- *  Author: Ricardo Emerson Julio (ricardoej@gmail.com)
+ *  Modified on: 02/03/2017
+ *  Author: Adriano Henrique Rossette Leite (adrianohrl@unifei.edu.br)
+ *          Ricardo Emerson Julio (ricardoej@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
 #include "hratc2017/map.h"
-#define OFFSET 2
 
 namespace hratc2017
 {
-  Map::Map() {}
 
-  Map::Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type)
+/**
+ * @brief Map::Map
+ * @param msg
+ * @param type
+ */
+Map::Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type,
+         double map_coverage_offset, double map_coverage_margin)
+    : map_coverage_offset_(map_coverage_offset),
+      map_coverage_margin_(map_coverage_margin)
+{
+  if (msg->markers.size() != 4)
   {
-    leftBottomCorner_ = msg->markers[0].pose.position;
-    rightBottomCorner_ = msg->markers[1].pose.position;
-    rightTopCorner_ = msg->markers[2].pose.position;
-    leftTopCorner_ = msg->markers[3].pose.position;
-
-    if (type == "relative")
-    {
-      double xSize = std::abs(leftTopCorner_.x - rightTopCorner_.x);
-      double ySize = std::abs(leftBottomCorner_.x - rightBottomCorner_.x);
-
-      leftBottomCorner_.x = -1 * xSize / 2 + OFFSET;
-      leftBottomCorner_.y = -1 * ySize / 2 + OFFSET;
-      leftBottomCorner_.z = 0;
-
-      leftTopCorner_.x = -1 * xSize / 2 + OFFSET;
-      leftTopCorner_.y = ySize / 2 - OFFSET;
-      leftTopCorner_.z = 0;
-
-      rightTopCorner_.x = xSize / 2 - OFFSET;
-      rightTopCorner_.y = ySize / 2 - OFFSET;
-      rightTopCorner_.z = 0;
-
-      rightBottomCorner_.x = xSize / 2 - OFFSET;
-      rightBottomCorner_.y = -1 * ySize / 2 + OFFSET;
-      rightBottomCorner_.z = 0;
-    }
+    throw utilities::Exception("Map must have four corners!!!");
   }
-
-  Map::Map(geometry_msgs::Point leftBottomCorner, geometry_msgs::Point leftTopCorner, geometry_msgs::Point rightTopCorner, geometry_msgs::Point rightBottomCorner)
+  left_bottom_corner_ = msg->markers[0].pose.position;
+  right_bottom_corner_ = msg->markers[1].pose.position;
+  right_top_corner_ = msg->markers[2].pose.position;
+  left_top_corner_ = msg->markers[3].pose.position;
+  if (type == "relative")
   {
-    leftBottomCorner_ = leftBottomCorner;
-    leftTopCorner_ = leftTopCorner;
-    rightTopCorner_ = rightTopCorner;
-    rightBottomCorner_ = rightBottomCorner;
+    double x_size(std::abs(left_top_corner_.x - right_top_corner_.x));
+    double y_size(std::abs(left_bottom_corner_.x - right_bottom_corner_.x));
+    left_bottom_corner_.x = -1 * x_size / 2 + map_coverage_margin_;
+    left_bottom_corner_.y = -1 * y_size / 2 + map_coverage_margin_;
+    left_bottom_corner_.z = 0;
+    left_top_corner_.x = -1 * x_size / 2 + map_coverage_margin_;
+    left_top_corner_.y = y_size / 2 - map_coverage_margin_;
+    left_top_corner_.z = 0;
+    right_top_corner_.x = x_size / 2 - map_coverage_margin_;
+    right_top_corner_.y = y_size / 2 - map_coverage_margin_;
+    right_top_corner_.z = 0;
+    right_bottom_corner_.x = x_size / 2 - map_coverage_margin_;
+    right_bottom_corner_.y = -1 * y_size / 2 + map_coverage_margin_;
+    right_bottom_corner_.z = 0;
   }
+  generateWaypoints();
+}
 
-  Map::~Map() {}
+/**
+ * @brief Map::Map
+ * @param left_bottom_corner
+ * @param left_top_corner
+ * @param right_top_corner
+ * @param right_bottom_corner
+ */
+Map::Map(geometry_msgs::Point left_bottom_corner,
+         geometry_msgs::Point left_top_corner,
+         geometry_msgs::Point right_top_corner,
+         geometry_msgs::Point right_bottom_corner, double map_coverage_offset,
+         double map_coverage_margin)
+    : map_coverage_offset_(map_coverage_offset),
+      map_coverage_margin_(map_coverage_margin),
+      left_bottom_corner_(left_bottom_corner),
+      left_top_corner_(left_top_corner), right_top_corner_(right_top_corner),
+      right_bottom_corner_(right_bottom_corner)
+{
+  generateWaypoints();
+}
 
-  geometry_msgs::Point  Map::getLeftTopCorner() const
+/**
+ * @brief Map::~Map
+ */
+Map::~Map() {}
+
+/**
+ * @brief Map::getNextWaypoint
+ * @return
+ */
+geometry_msgs::Point Map::getNextWaypoint() const { return waypoints_.front(); }
+
+/**
+ * @brief Map::getX
+ * @return
+ */
+double Map::getX() const
+{
+  return waypoints_.front().x;
+}
+
+/**
+ * @brief Map::getY
+ * @return
+ */
+double Map::getY() const
+{
+  return waypoints_.front().y;
+}
+
+/**
+ * @brief Map::isDone
+ * @return
+ */
+bool Map::empty() const { return waypoints_.empty(); }
+
+/**
+ * @brief Map::pop
+ */
+void Map::pop() { waypoints_.pop(); }
+
+/**
+ * @brief Map::str
+ * @return
+ */
+std::string Map::str() const
+{
+  std::stringstream ss;
+  ss << "left bottom: (" << left_bottom_corner_.x << ", "
+     << left_bottom_corner_.y;
+  ss << "), left top: (" << left_top_corner_.x << ", " << left_top_corner_.y;
+  ss << "), right bottom: (" << right_bottom_corner_.x << ", "
+     << right_bottom_corner_.y;
+  ss << "), right top: (" << right_top_corner_.x << ", " << right_top_corner_.y;
+  ss << "), waypoints: ";
+  return ss.str();
+}
+
+/**
+ * @brief Map::c_str
+ * @return
+ */
+const char* Map::c_str() const { return str().c_str(); }
+
+/**
+ * @brief Map::generateWaypoints generates the waypoint/map coverage strategy
+ */
+void Map::generateWaypoints()
+{
+  clear();
+  geometry_msgs::Point last_waypoint(right_bottom_corner_);
+  geometry_msgs::Point current_waypoint(left_bottom_corner_);
+  while (current_waypoint.x <= last_waypoint.x)
   {
-    return leftTopCorner_;
+    waypoints_.push(current_waypoint);
+    current_waypoint.y = current_waypoint.y == left_bottom_corner_.y
+                             ? left_top_corner_.y
+                             : left_bottom_corner_.y;
+    waypoints_.push(current_waypoint);
+    current_waypoint.x += map_coverage_offset_;
   }
+}
 
-  geometry_msgs::Point  Map::getRightTopCorner() const
+/**
+ * @brief Map::clear
+ */
+void Map::clear()
+{
+  while (!waypoints_.empty())
   {
-    return rightTopCorner_;
+    waypoints_.pop();
   }
-
-  geometry_msgs::Point  Map::getLeftBottomCorner() const
-  {
-    return leftBottomCorner_;
-  }
-
-  geometry_msgs::Point  Map::getRightBottomCorner() const
-  {
-    return rightBottomCorner_;
-  }
+}
 }

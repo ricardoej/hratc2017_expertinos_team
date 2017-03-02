@@ -2,10 +2,10 @@
  *  This header file defines the WaypointsController class, which is based
  *on the ROSNode class. It controls the waypoints_controller_node.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.1
  *  Created on: 06/02/2017
- *  Modified on: 06/02/2017
- *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
+ *  Modified on: 02/03/2017
+ *  Author: Adriano Henrique Rossette Leite (adrianohrl@unifei.edu.br)
  *          Ricardo Emerson Julio (ricardoej@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -14,24 +14,18 @@
 #define _HRATC2017_ENTRIES_WAYPOINTS_CONTROLLER_H_
 
 #include <ros/ros.h>
+#include <actionlib/client/simple_action_client.h>
+#include <tf/transform_datatypes.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <std_msgs/Bool.h>
 #include "hratc2017/map.h"
 #include "utilities/ros_node.h"
-#include <move_base_msgs/MoveBaseAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include "visualization_msgs/MarkerArray.h"
-#include <queue>
-#include "geometry_msgs/Point.h"
-#include <tf/transform_datatypes.h>
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/client/terminal_state.h>
-#include <std_msgs/Bool.h>
-
-#define DEFAULT_MAP_COVERAGE_OFFSET 1.5
 
 namespace hratc2017
 {
 
-typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>
+    MoveBaseClient;
 
 class WaypointsController : public utilities::ROSNode
 {
@@ -42,18 +36,23 @@ public:
 private:
   MoveBaseClient move_base_client_;
   ros::Subscriber corners_sub_;
-  ros::Subscriber start_scanning_sub_;
+  ros::Subscriber scanning_sub_;
+  ros::Publisher waypoints_pub_;
   Map* map_;
-  std::queue<geometry_msgs::Point> waypoints_;
-  bool has_active_goal_;
-  bool is_scanning_;
+  bool active_goal_;
+  bool scanning_;
   virtual void controlLoop();
-  void createStrategy();
-  void mapCornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
-  void startScanningCallback(const std_msgs::Bool::ConstPtr& msg);
-  void goalDoneCallback(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResult::ConstPtr &result);
+  void sendGoal(const geometry_msgs::Pose& target_pose);
+  void sendGoal(const geometry_msgs::Point& waypoint);
+  void sendGoal(double x, double y, double theta = 0.0);
+  void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
+  void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
   void goalActiveCallback();
-  void goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback);
+  void
+  feedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr& feedback);
+  void resultCallback(const actionlib::SimpleClientGoalState& state,
+                      const move_base_msgs::MoveBaseResult::ConstPtr& result);
+  void publishWaypoint(const geometry_msgs::Point& waypoint) const;
 };
 }
 

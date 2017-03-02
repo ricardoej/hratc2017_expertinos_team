@@ -2,10 +2,10 @@
  *  This source file implements the WaypointsController class, which is
  *based on the ROSNode helper class. It controls the waypoints_controller_node.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.1
  *  Created on: 06/02/2017
- *  Modified on: 06/02/2017
- *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
+ *  Modified on: 02/03/2017
+ *  Author: Adriano Henrique Rossette Leite (adrianohrl@unifei.edu.br)
  *          Ricardo Emerson Julio (ricardoej@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -14,212 +14,229 @@
 
 namespace hratc2017
 {
-	/**
-	 * @brief WaypointsController::WaypointsController
-	 * @param nh
-	 */
-	WaypointsController::WaypointsController(ros::NodeHandle* nh) : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true)
-	{
-		ROS_DEBUG("Subscribing to corners");
-		corners_sub_ = nh->subscribe("/corners", 100, &WaypointsController::mapCornersCallback, this);
 
-		ROS_DEBUG("Subscribing to start_scanning");
-		start_scanning_sub_ = nh->subscribe("/p3at/start_scanning", 100, &WaypointsController::startScanningCallback, this);
+/**
+ * @brief WaypointsController::WaypointsController
+ * @param nh
+ */
+WaypointsController::WaypointsController(ros::NodeHandle* nh)
+    : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true),
+      active_goal_(false), scanning_(false)
+{
+  corners_sub_ =
+      nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
+  scanning_sub_ = nh->subscribe("start_scanning", 1,
+                                &WaypointsController::scanningCallback, this);
+  waypoints_pub_ =
+      nh->advertise<visualization_msgs::Marker>("waypoint_markers", 0);
+}
 
-		has_active_goal_ = false;
-		is_scanning_ = false;
-	}
+/**
+ * @brief WaypointsController::~WaypointsController
+ */
+WaypointsController::~WaypointsController()
+{
+  corners_sub_.shutdown();
+  scanning_sub_.shutdown();
+  waypoints_pub_.shutdown();
+  if (map_)
+  {
+    delete map_;
+    map_ = NULL;
+  }
+}
 
-	/**
-	 * @brief WaypointsController::~WaypointsController
-	 */
-	WaypointsController::~WaypointsController()
-	{
-		corners_sub_.shutdown();
+/**
+ * @brief WaypointsController::controlLoop
+ */
+void WaypointsController::controlLoop()
+{
+  if (!move_base_client_.waitForServer(ros::Duration(0.5)))
+  {
+    ROS_WARN("Waiting for the move_base action server to come up.");
+    return;
+  }
+  else
+  {
+    if (scanning_ && active_goal_)
+    {
+      move_base_client_.cancelAllGoals();
+      ROS_INFO("Sent a cancel all goals.");
+    }
+    else if (!scanning_ && !active_goal_ && map_ && !map_->empty())
+    {
+      sendGoal(map_->getNextWaypoint());
+      publishWaypoint(map_->getNextWaypoint());
+    }
+  }
+}
 
-		if (map_)
-		{
-			delete map_;
-			map_ = NULL;
-		}
-	}
+/**
+ * @brief WaypointsController::sendGoal
+ * @param x
+ * @param y
+ * @param theta
+ */
+void WaypointsController::sendGoal(const geometry_msgs::Pose& target_pose)
+{
+  move_base_msgs::MoveBaseGoal goal;
+  goal.target_pose.header.frame_id = "map";
+  goal.target_pose.header.stamp = ros::Time::now();
+  goal.target_pose.pose = target_pose;
+  move_base_client_.sendGoal(
+      goal, boost::bind(&WaypointsController::resultCallback, this, _1, _2),
+      boost::bind(&WaypointsController::goalActiveCallback, this),
+      boost::bind(&WaypointsController::feedbackCallback, this, _1));
+}
 
-	/**
-	 * @brief WaypointsController::controlLoop
-	 */
-	void WaypointsController::controlLoop() 
-	{
-		// wait for the action server to come up
-		if (!move_base_client_.waitForServer(ros::Duration(0.5)))
-		{
-			ROS_DEBUG("Waiting for the move_base action server to come up");
-		}
-		else
-		{
-			if (is_scanning_ && has_active_goal_)
-			{
-				move_base_client_.cancelAllGoals();
-				ROS_INFO("Send cancel goals");
-			}
-			else if (map_ && !has_active_goal_ && !is_scanning_ && waypoints_.size() > 0)
-			{
-				move_base_msgs::MoveBaseGoal goal;
-				goal.target_pose.header.frame_id = "map";
-				goal.target_pose.header.stamp = ros::Time::now();
-				goal.target_pose.pose.position.x = waypoints_.front().x;
-				goal.target_pose.pose.position.y = waypoints_.front().y;
-				goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+/**
+ * @brief WaypointsController::sendGoal
+ * @param target_position
+ */
+void WaypointsController::sendGoal(const geometry_msgs::Point& waypoint)
+{
+  sendGoal(waypoint.x, waypoint.y);
+}
 
-				ROS_INFO("Sending goal [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
-				move_base_client_.sendGoal(goal, 
-					boost::bind(&WaypointsController::goalDoneCallback, this, _1, _2),
-					boost::bind(&WaypointsController::goalActiveCallback, this), 
-					boost::bind(&WaypointsController::goalFeedbackCallback, this, _1));			
-			}
-		}
-	}
+/**
+ * @brief WaypointsController::sendGoal
+ * @param x
+ * @param y
+ * @param theta
+ */
+void WaypointsController::sendGoal(double x, double y, double theta)
+{
+  ROS_INFO("Sent new goal @ (%f [m], %f [m], %f [rad])", x, y, theta);
+  geometry_msgs::Pose target_pose;
+  target_pose.position.x = x;
+  target_pose.position.y = y;
+  target_pose.orientation = tf::createQuaternionMsgFromYaw(theta);
+  sendGoal(target_pose);
+}
 
-	/**
-	 * @brief WaypointsController::mapCornersCallback receives the map borders
-	 * @param msg map corner position.
-	 */
-	void WaypointsController::mapCornersCallback(
-		const visualization_msgs::MarkerArray::ConstPtr & corners)
-	    
-	{
-		map_ = new Map(corners, "relative");
+/**
+ * @brief WaypointsController::mapCornersCallback receives the map borders
+ * @param msg map corner position.
+ */
+void WaypointsController::cornersCallback(
+    const visualization_msgs::MarkerArray::ConstPtr& corners)
+{
+  if (map_ && !map_->empty())
+  {
+    ROS_WARN("Ignoring the new message in /corners topic. There still exists "
+             "waypoint(s) to pass through.");
+    return;
+  }
+  if (map_)
+  {
+    delete map_;
+    map_ = NULL;
+  }
+  ros::NodeHandle pnh("~");
+  double map_coverage_offset;
+  pnh.param("map_coverage_offset", map_coverage_offset,
+            DEFAULT_MAP_COVERAGE_OFFSET);
+  double map_coverage_margin;
+  pnh.param("map_coverage_offset", map_coverage_margin,
+            DEFAULT_MAP_COVERAGE_MARGIN);
+  try
+  {
+    map_ =
+        new Map(corners, "relative", map_coverage_offset, map_coverage_margin);
+    ROS_INFO("Map created: %s", map_->c_str());
+  }
+  catch (utilities::Exception ex)
+  {
+    ROS_FATAL("Exception catched: %s", ex.what());
+  }
+}
 
-		ROS_DEBUG("Map created! (%f, %f, %f) (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)",
-			map_->getLeftBottomCorner().x,
-			map_->getLeftBottomCorner().y,
-			map_->getLeftBottomCorner().z,
-			map_->getLeftTopCorner().x,
-			map_->getLeftTopCorner().y,
-			map_->getLeftTopCorner().z,
-			map_->getRightTopCorner().x,
-			map_->getRightTopCorner().y,
-			map_->getRightTopCorner().z,
-			map_->getRightBottomCorner().x,
-			map_->getRightBottomCorner().y,
-			map_->getRightBottomCorner().z);
+/**
+ * @brief WaypointsController::startScanningCallback receives if the robot is
+ * scanning
+ * @param msg is scanning?
+ */
+void WaypointsController::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
+{
+  if (scanning_ != msg->data)
+  {
+    scanning_ = msg->data;
+    ROS_DEBUG("Is scanning? %s.", scanning_ ? "TRUE" : "FALSE");
+  }
+}
 
-		createStrategy();
-	}
+/**
+ * @brief WaypointsController::goalActiveCallback called once when the goal
+ * becomes active
+ */
+void WaypointsController::goalActiveCallback()
+{
+  ROS_INFO("Goal just went active.");
+  active_goal_ = true;
+}
 
-	/**
-	 * @brief WaypointsController::startScanningCallback receives if the robot is scanning
-	 * @param msg is scanning?
-	 */
-	void WaypointsController::startScanningCallback(const std_msgs::Bool::ConstPtr& msg)
-	{
-		ROS_DEBUG("start_scanning %s", msg->data ? "TRUE" : "FALSE");
-		if (is_scanning_ != msg->data)
-		{
-			is_scanning_ = msg->data;
-			ROS_INFO("Is scanning? %s", is_scanning_ ? "TRUE" : "FALSE");
-		}
-	}
+/**
+ * @brief WaypointsController::feedbackCallback called every time feedback
+ * is received for the goal
+ */
+void WaypointsController::feedbackCallback(
+    const move_base_msgs::MoveBaseFeedback::ConstPtr& feedback)
+{
+  active_goal_ =
+      move_base_client_.getState() == actionlib::SimpleClientGoalState::ACTIVE;
+}
 
-	/**
-	 * @brief WaypointsController::createStrategy creates the waypoint/map coverage strategy
-	 */
-	void WaypointsController::createStrategy()
-	{
-		geometry_msgs::Point startWaypoint = map_->getLeftBottomCorner();
-		geometry_msgs::Point finishWaypoint = map_->getRightBottomCorner();
-		geometry_msgs::Point currentWaypoint = startWaypoint;
-		waypoints_.push(startWaypoint);
-		ROS_INFO("Added Point: (%f, %f, %f)", startWaypoint.x, startWaypoint.y, startWaypoint.z);
+/**
+ * @brief WaypointsController::resultCallback called once when the goal
+ * completes
+ */
+void WaypointsController::resultCallback(
+    const actionlib::SimpleClientGoalState& state,
+    const move_base_msgs::MoveBaseResult::ConstPtr& result)
+{
+  if (!map_)
+  {
+    ROS_FATAL("Got new result, but there is no strategy yet.");
+    return;
+  }
+  ROS_DEBUG("Finished in state [%s].", state.toString().c_str());
+  if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+  {
+    ROS_INFO("Succeeded at position (%lf, %lf).", map_->getX(), map_->getY());
+    map_->pop();
+  }
+  else if (state == actionlib::SimpleClientGoalState::ABORTED ||
+           state == actionlib::SimpleClientGoalState::REJECTED)
+  {
+    ROS_INFO("Goal aborted or rejected.");
+    map_->pop();
+  }
+  else if (state == actionlib::SimpleClientGoalState::PREEMPTED)
+  {
+    ROS_INFO("Goal canceled.");
+  }
+  active_goal_ = false;
+}
 
-		bool hasTargetFinishPoint = false;
-
-		while (true)
-		{
-			geometry_msgs::Point nextWaypoint;
-
-			if (currentWaypoint.y == map_->getLeftBottomCorner().y)
-			{
-				nextWaypoint.y = map_->getLeftTopCorner().y;
-			}
-			else if (currentWaypoint.y == map_->getLeftTopCorner().y)
-			{
-				nextWaypoint.y = map_->getLeftBottomCorner().y;
-			}
-
-			nextWaypoint.x = currentWaypoint.x;
-			nextWaypoint.z = currentWaypoint.z;
-			waypoints_.push(nextWaypoint);
-			ROS_INFO("Added Point: (%f, %f, %f)", nextWaypoint.x, nextWaypoint.y, nextWaypoint.z);
-			currentWaypoint = nextWaypoint;
-
-			if (currentWaypoint.x == finishWaypoint.x && currentWaypoint.y == finishWaypoint.y)
-			{
-				hasTargetFinishPoint = true;
-			}
-
-			if (hasTargetFinishPoint)
-			{
-				break;
-			}
-
-			geometry_msgs::Point offsetWaypoint;
-			double mapCoverageOffset;
-			ros::param::param<double>("/map_coverage_offset", mapCoverageOffset, DEFAULT_MAP_COVERAGE_OFFSET);
-			offsetWaypoint.x = currentWaypoint.x + mapCoverageOffset;
-			offsetWaypoint.y = currentWaypoint.y;
-			offsetWaypoint.z = currentWaypoint.z;
-			waypoints_.push(offsetWaypoint);
-			ROS_INFO("Added Point: (%f, %f, %f)", offsetWaypoint.x, offsetWaypoint.y, offsetWaypoint.z);
-			currentWaypoint = offsetWaypoint;
-
-			if (offsetWaypoint.x >= finishWaypoint.x)
-			{
-				// At this point, we know that the robot has target the finish point
-				hasTargetFinishPoint = true;
-			}
-		}
-	}
-
-	/**
-	 * @brief WaypointsController::goalDoneCallback called once when the goal completes
-	 */
-	void WaypointsController::goalDoneCallback(const actionlib::SimpleClientGoalState& state, 
-		const move_base_msgs::MoveBaseResult::ConstPtr &result)
-	{
-		ROS_INFO("Finished in state [%s]", state.toString().c_str());
-		if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
-		{
-			ROS_INFO("Succeeded in position [%f, %f, %f]", waypoints_.front().x, waypoints_.front().y, waypoints_.front().z);
-			waypoints_.pop();
-			has_active_goal_ = false;
-		}
-		else if (state == actionlib::SimpleClientGoalState::ABORTED || state == actionlib::SimpleClientGoalState::REJECTED)
-		{
-			ROS_INFO("Goal aborted or rejected");
-			waypoints_.pop();
-			has_active_goal_ = false;
-		}
-		else if (state == actionlib::SimpleClientGoalState::PREEMPTED)
-		{
-			ROS_INFO("Goal canceled");
-			has_active_goal_ = false;
-		}
-	}
-
-	/**
-	 * @brief WaypointsController::goalActiveCallback called once when the goal becomes active
-	 */
-	void WaypointsController::goalActiveCallback()
-	{
-	  ROS_INFO("Goal just went active");
-	  has_active_goal_ = true;
-	}
-
-	/**
-	 * @brief WaypointsController::goalFeedbackCallback called every time feedback is received for the goal
-	 */
-	void WaypointsController::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr &feedback)
-	{
-	  has_active_goal_ = move_base_client_.getState() == actionlib::SimpleClientGoalState::ACTIVE;
-	}
+void WaypointsController::publishWaypoint(
+    const geometry_msgs::Point& waypoint) const
+{
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "map";
+  marker.header.stamp = ros::Time::now();
+  marker.ns = "p3at";
+  marker.id = 0;
+  marker.type = visualization_msgs::Marker::CYLINDER;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.pose.position = waypoint;
+  marker.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  marker.scale.x = 0.25;
+  marker.scale.y = 0.25;
+  marker.scale.z = 2;
+  marker.color.a = 1.0;
+  marker.color.r = 1.0;
+  marker.color.g = 0.36;
+  marker.color.b = 0.0;
+  waypoints_pub_.publish(marker);
+}
 }
