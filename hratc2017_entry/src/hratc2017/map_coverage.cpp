@@ -9,17 +9,17 @@
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
-#include "hratc2017/map.h"
+#include "hratc2017/map_coverage.h"
 
 namespace hratc2017
 {
 
 /**
- * @brief Map::Map
+ * @brief MapCoverage::MapCoverage
  * @param msg
  * @param type
  */
-Map::Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type,
+MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg, std::string type,
          double map_coverage_offset, double map_coverage_margin)
     : map_coverage_offset_(map_coverage_offset),
       map_coverage_margin_(map_coverage_margin)
@@ -53,13 +53,13 @@ Map::Map(visualization_msgs::MarkerArray::ConstPtr msg, std::string type,
 }
 
 /**
- * @brief Map::Map
+ * @brief MapCoverage::MapCoverage
  * @param left_bottom_corner
  * @param left_top_corner
  * @param right_top_corner
  * @param right_bottom_corner
  */
-Map::Map(geometry_msgs::Point left_bottom_corner,
+MapCoverage::MapCoverage(geometry_msgs::Point left_bottom_corner,
          geometry_msgs::Point left_top_corner,
          geometry_msgs::Point right_top_corner,
          geometry_msgs::Point right_bottom_corner, double map_coverage_offset,
@@ -74,50 +74,50 @@ Map::Map(geometry_msgs::Point left_bottom_corner,
 }
 
 /**
- * @brief Map::~Map
+ * @brief MapCoverage::~MapCoverage
  */
-Map::~Map() {}
+MapCoverage::~MapCoverage() {}
 
 /**
- * @brief Map::getNextWaypoint
+ * @brief MapCoverage::getNextWaypoint
  * @return
  */
-geometry_msgs::Point Map::getNextWaypoint() const { return waypoints_.front(); }
+geometry_msgs::Point MapCoverage::getNextWaypoint() const { return waypoints_.front(); }
 
 /**
- * @brief Map::getX
+ * @brief MapCoverage::getX
  * @return
  */
-double Map::getX() const
+double MapCoverage::getX() const
 {
   return waypoints_.front().x;
 }
 
 /**
- * @brief Map::getY
+ * @brief MapCoverage::getY
  * @return
  */
-double Map::getY() const
+double MapCoverage::getY() const
 {
   return waypoints_.front().y;
 }
 
 /**
- * @brief Map::isDone
+ * @brief MapCoverage::empty
  * @return
  */
-bool Map::empty() const { return waypoints_.empty(); }
+bool MapCoverage::empty() const { return waypoints_.empty(); }
 
 /**
- * @brief Map::pop
+ * @brief MapCoverage::pop
  */
-void Map::pop() { waypoints_.pop(); }
+void MapCoverage::pop() { waypoints_.pop(); }
 
 /**
- * @brief Map::str
+ * @brief MapCoverage::str
  * @return
  */
-std::string Map::str() const
+std::string MapCoverage::str() const
 {
   std::stringstream ss;
   ss << "left bottom: (" << left_bottom_corner_.x << ", "
@@ -131,15 +131,15 @@ std::string Map::str() const
 }
 
 /**
- * @brief Map::c_str
+ * @brief MapCoverage::c_str
  * @return
  */
-const char* Map::c_str() const { return str().c_str(); }
+const char* MapCoverage::c_str() const { return str().c_str(); }
 
 /**
- * @brief Map::generateWaypoints generates the waypoint/map coverage strategy
+ * @brief MapCoverage::generateWaypoints generates the waypoint/map coverage strategy
  */
-void Map::generateWaypoints()
+void MapCoverage::generateWaypoints()
 {
   clear();
   geometry_msgs::Point last_waypoint(right_bottom_corner_);
@@ -156,9 +156,9 @@ void Map::generateWaypoints()
 }
 
 /**
- * @brief Map::clear
+ * @brief MapCoverage::clear
  */
-void Map::clear()
+void MapCoverage::clear()
 {
   while (!waypoints_.empty())
   {

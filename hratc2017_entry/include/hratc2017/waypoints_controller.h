@@ -18,7 +18,7 @@
 #include <tf/transform_datatypes.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <std_msgs/Bool.h>
-#include "hratc2017/map.h"
+#include "hratc2017/map_coverage.h"
 #include "utilities/ros_node.h"
 
 namespace hratc2017
@@ -38,7 +38,7 @@ private:
   ros::Subscriber corners_sub_;
   ros::Subscriber scanning_sub_;
   ros::Publisher waypoints_pub_;
-  Map* map_;
+  MapCoverage* map_;
   bool active_goal_;
   bool scanning_;
   virtual void controlLoop();

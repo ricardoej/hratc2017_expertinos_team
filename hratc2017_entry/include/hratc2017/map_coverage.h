@@ -1,5 +1,5 @@
 /**
- *  This header file defines the Map class.
+ *  This header file defines the MapCoverage class.
  *
  *  Version: 1.0.1
  *  Created on: 06/02/2017
@@ -22,20 +22,20 @@
 
 namespace hratc2017
 {
-class Map
+class MapCoverage
 {
 public:
-  Map(visualization_msgs::MarkerArray::ConstPtr msg,
+  MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg,
       std::string type = "absolute",
       double map_coverage_offset = DEFAULT_MAP_COVERAGE_OFFSET,
       double map_coverage_margin = DEFAULT_MAP_COVERAGE_MARGIN);
-  Map(geometry_msgs::Point left_bottom_corner,
+  MapCoverage(geometry_msgs::Point left_bottom_corner,
       geometry_msgs::Point left_top_corner,
       geometry_msgs::Point right_top_corner,
       geometry_msgs::Point right_bottom_corner,
       double map_coverage_offset = DEFAULT_MAP_COVERAGE_OFFSET,
       double map_coverage_margin = DEFAULT_MAP_COVERAGE_MARGIN);
-  virtual ~Map();
+  virtual ~MapCoverage();
   geometry_msgs::Point getNextWaypoint() const;
   double getX() const;
   double getY() const;

@@ -142,7 +142,7 @@ void WaypointsController::cornersCallback(
   try
   {
     map_ =
-        new Map(corners, "relative", map_coverage_offset, map_coverage_margin);
+        new MapCoverage(corners, "relative", map_coverage_offset, map_coverage_margin);
     ROS_INFO("Map created: %s", map_->c_str());
   }
   catch (utilities::Exception ex)
