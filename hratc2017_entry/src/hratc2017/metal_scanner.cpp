@@ -56,12 +56,15 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Coil signal tolerance: %f", coil_signal_tolerance_);
   pnh.param("safe_coil_signal", safe_coil_signal_, SAFE_COIL_SIGNAL);
   ROS_INFO("   Safe coil signal %f", safe_coil_signal_);
+  pnh.param("sample_time", sample_time_, SAMPLE_TIME);
+  ROS_INFO("   Sample time: %f", sample_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("start_scanning", 1, &MetalScanner::scanningCallback, this);
+  sampler_ = nh->createTimer(ros::Duration(sample_time_), &MetalScanner::timerCallback, this);
 }
 
 /**
@@ -116,7 +119,7 @@ void MetalScanner::setNextState()
         coils_.getRightValue() >= ref_coil_signal_)
     {
       ROS_INFO("   State change (from S2 to S3)!");
-      current_state_ = states::S3_SCANNING_LEFT;
+      current_state_ = states::S1_ALINGING;
     }
     break;
   case states::S3_SCANNING_LEFT:
@@ -187,7 +190,7 @@ void MetalScanner::setVelocity()
     break;
   case states::S6_CHANGING_DIRECTION:
     ROS_DEBUG("   S6 - Moving away!");
-    setVelocity(0, wz_);
+    setVelocity(-vx_, 0);
     break;
   }
 }
@@ -220,6 +223,12 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
       reset();
     }
   }
+}
+
+void MetalScanner::timerCallback(const ros::TimerEvent &event)
+{
+  derivative_ = coils_.getDerivative(sample_time_);
+  //ROS_INFO("   Derivative value: %f", derivative_);
 }
 
 /**

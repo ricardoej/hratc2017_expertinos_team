@@ -31,6 +31,7 @@ public:
   virtual ~Coils();
   float getLeftValue() const;
   float getRightValue() const;
+  float getDerivative(float sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
   void setNumberOfObservations(int number_of_observations);
@@ -58,6 +59,7 @@ public:
 private:
   Coil left_;
   Coil right_;
+  float last_sample_;
   tf::TransformListener* tf_;
   geometry_msgs::PoseStamped EMPTY_POSE;
   geometry_msgs::PoseStamped getPose(std::string frame_id) const;

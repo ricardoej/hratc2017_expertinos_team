@@ -149,6 +149,8 @@ void LandmineAnalyzer::controlLoop()
   }
   //é necessário ficar publicando para twist_mux travar o navigation
   // constantemente
+  if (landmine_.polygon.points.size() == 2)
+    ROS_ERROR("X0: %f, Y0: %f", landmine_.polygon.points[0].x, landmine_.polygon.points[0].y);
   sampling_ = true;
   setScanning(true);
   landmine_.header.stamp = ros::Time::now();

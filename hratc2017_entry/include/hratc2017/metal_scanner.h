@@ -30,6 +30,8 @@
 #define SAFE_COIL_SIGNAL 0.35
 #define THRESHOLD 0.5
 #define SAFE_TIME 2.0
+#define NUMBER_OF_NEGATIVE_SAMPLES 3
+#define SAMPLE_TIME 0.1
 
 namespace hratc2017
 {
@@ -57,6 +59,7 @@ public:
 
 private:
   ros::Time s6_timer_;
+  ros::Timer sampler_;
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber scanning_sub_;
@@ -73,13 +76,16 @@ private:
   double coil_signal_tolerance_;
   double safe_coil_signal_;
   double safe_time_;
+  double sample_time_;
   bool scanning_;
+  float derivative_;
   virtual void controlLoop();
   void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
   void reset();
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
+  void timerCallback(const ros::TimerEvent& event);
 };
 }
 

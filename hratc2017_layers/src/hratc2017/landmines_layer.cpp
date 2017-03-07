@@ -210,6 +210,6 @@ void LandminesLayer::fakeLandminesCallback(
   min_y_ = std::min(min_y_, msg->pose.position.y - msg->pose.position.z);
   max_x_ = std::max(max_x_, msg->pose.position.x + msg->pose.position.z);
   max_y_ = std::max(max_y_, msg->pose.position.y + msg->pose.position.z);
-  fake_landmines_.push_back(msg->pose.position);
+  //fake_landmines_.push_back(msg->pose.position);
 }
 }

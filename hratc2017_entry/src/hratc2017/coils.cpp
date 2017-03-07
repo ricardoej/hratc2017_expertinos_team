@@ -26,6 +26,7 @@ Coils::Coils(tf::TransformListener* tf)
   EMPTY_POSE.pose.position.y = 0;
   EMPTY_POSE.pose.position.z = 0;
   EMPTY_POSE.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  last_sample_ = (getRightValue() + getLeftValue()) / 2;
 }
 
 /**
@@ -51,6 +52,14 @@ float Coils::getLeftValue() const { return left_.getValue(); }
  * @return the right coil's current filtered signal
  */
 float Coils::getRightValue() const { return right_.getValue(); }
+
+float Coils::getDerivative(float sample_time)
+{
+  float current_sample((getRightValue() + getLeftValue()) / 2);
+  float delta_sample(current_sample - last_sample_);
+  last_sample_ = current_sample;
+  return delta_sample / sample_time;
+}
 
 /**
  * @brief Coils::setLowThreshold sets the new desired low threshold.
