@@ -15,6 +15,9 @@
 
 PLUGINLIB_EXPORT_CLASS(hratc2017::ObstaclesLayer, costmap_2d::Layer)
 
+#define DEFAULT_OBSTACLE_RADIUS 0.5
+#define DEFAULT_OBSTACLE_NUMBER_OF_PARTS 12
+
 namespace hratc2017
 {
 
@@ -22,7 +25,7 @@ namespace hratc2017
  * @brief ObstaclesLayer::ObstaclesLayer
  */
 ObstaclesLayer::ObstaclesLayer()
-    : dsrv_(NULL), radius_(0.5), num_parts_(12),
+    : dsrv_(NULL), radius_(DEFAULT_OBSTACLE_RADIUS), num_parts_(DEFAULT_OBSTACLE_NUMBER_OF_PARTS),
       min_x_(std::numeric_limits<float>::max()),
       min_y_(std::numeric_limits<float>::max()),
       max_x_(-std::numeric_limits<float>::max()),
@@ -48,18 +51,18 @@ ObstaclesLayer::~ObstaclesLayer()
  */
 void ObstaclesLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name_);
-  nh.param("radius", radius_, 0.15);
+  ros::NodeHandle pnh("~/" + name_);
+  pnh.param("radius", radius_, DEFAULT_OBSTACLE_RADIUS);
   ROS_INFO("    Obstacle radius: %lf", radius_);
-  nh.param("num_parts", num_parts_, 12);
+  pnh.param("num_parts", num_parts_, DEFAULT_OBSTACLE_NUMBER_OF_PARTS);
   ROS_INFO("    Number of parts of obstacle circumference: %d", num_parts_);
   std::string source;
-  nh.param("obstacles_topic", source, std::string("obstacles"));
+  pnh.param("obstacles_topic", source, std::string("obstacles"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
   current_ = true;
   obstacles_sub_ =
-      nh.subscribe(source, 10, &ObstaclesLayer::obstaclesCallback, this);
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
+      pnh.subscribe(source, 10, &ObstaclesLayer::obstaclesCallback, this);
+  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(pnh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
       cb = boost::bind(&ObstaclesLayer::reconfigureCallback, this, _1, _2);
   dsrv_->setCallback(cb);

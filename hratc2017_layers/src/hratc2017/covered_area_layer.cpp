@@ -14,6 +14,9 @@
 
 PLUGINLIB_EXPORT_CLASS(hratc2017::CoveredAreaLayer, costmap_2d::Layer)
 
+#define DEFAULT_VALUE 64
+#define DETECTION_RADIUS 0.15 //m
+
 namespace hratc2017
 {
 
@@ -39,20 +42,20 @@ CoveredAreaLayer::~CoveredAreaLayer()
  */
 void CoveredAreaLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name_);
+  ros::NodeHandle pnh("~/" + name_);
   rolling_window_ = layered_costmap_->isRolling();
   global_frame_ = layered_costmap_->getGlobalFrameID();
   int default_value;
-  nh.param("default_value", default_value, DEFAULT_VALUE);
+  pnh.param("default_value", default_value, DEFAULT_VALUE);
   default_value_ = default_value < 0 || default_value > 255
                        ? DEFAULT_VALUE
                        : (unsigned char)default_value;
   ROS_INFO("    Covered Area default cost value: %d", default_value);
-  nh.param("radius", radius_, DETECTION_RADIUS);
+  pnh.param("radius", radius_, DETECTION_RADIUS);
   ROS_INFO("    Detection radius : %lf", radius_);
   current_ = true;
   matchSize();
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
+  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(pnh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType
       cb = boost::bind(&CoveredAreaLayer::reconfigureCallback, this, _1, _2);
   dsrv_->setCallback(cb);

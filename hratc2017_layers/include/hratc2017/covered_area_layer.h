@@ -18,9 +18,6 @@
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 
-#define DEFAULT_VALUE 64
-#define DETECTION_RADIUS 0.15 //m
-
 namespace hratc2017
 {
 class CoveredAreaLayer : public costmap_2d::CostmapLayer
