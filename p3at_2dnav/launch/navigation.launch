@@ -1,7 +1,7 @@
 <launch>
   <arg name="rviz" default="true"/>
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/empty_world.yaml"/>
-  <include file="$(find p3at_2dnav)/launch/amcl.launch"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/empty_world_redim.yaml"/>
+  <!--include file="$(find p3at_2dnav)/launch/amcl.launch"/-->
   <include file="$(find p3at_2dnav)/launch/move_base.launch"/>
   <node name="rviz_navigation" pkg="rviz" respawn="false" type="rviz" args="-d $(find p3at_2dnav)/config/navigation.rviz" if="$(arg rviz)"/>
 </launch>
