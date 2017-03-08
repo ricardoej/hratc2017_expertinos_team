@@ -62,7 +62,7 @@ private:
   std::list<geometry_msgs::Point> mines_;
   std::string waypoints_str() const;
   void generateWaypoints();
-  void generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position);
+  void generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position, std::string type = "horizontal");
   void clear();
   bool isInsideMineArea(geometry_msgs::Point waypoint, geometry_msgs::Point &landmine) const;
 };

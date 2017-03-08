@@ -177,43 +177,78 @@ const char* MapCoverage::c_str() const { return str().c_str(); }
  */
 void MapCoverage::generateWaypoints()
 {
-  generateWaypoints(left_top_corner_, right_top_corner_);
+  clear();
+  generateWaypoints(left_bottom_corner_, right_top_corner_, "horizontal");
+  generateWaypoints(right_top_corner_, left_bottom_corner_, "vertical");
+  generateWaypoints(left_bottom_corner_, right_top_corner_, "horizontal");
+  generateWaypoints(right_top_corner_, left_bottom_corner_, "vertical");
 }
 
 /**
  * @brief MapCoverage::generateWaypoints generates the waypoint/map coverage strategy
  */
-void MapCoverage::generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position)
+void MapCoverage::generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position, std::string type)
 {
-  clear();
   geometry_msgs::Point current_waypoint(start_position);
 
-  bool is_finished = start_position.x == end_position.x
-                      && start_position.y == end_position.y;
+  bool is_finished = false;
 
   while (!is_finished)
   {
     waypoints_.push_back(current_waypoint);
-    current_waypoint.y = current_waypoint.y == left_bottom_corner_.y
+
+    if (type == "horizontal")
+    {
+      current_waypoint.y = current_waypoint.y == left_bottom_corner_.y
                              ? left_top_corner_.y
                              : left_bottom_corner_.y;
+    }
+    else if (type == "vertical")
+    {
+      current_waypoint.x = current_waypoint.x == right_bottom_corner_.x
+                             ? left_bottom_corner_.x
+                             : right_bottom_corner_.x;  
+    }
+
     waypoints_.push_back(current_waypoint);
 
-    if (start_position.x < end_position.x)
+    if (type == "horizontal")
     {
-      is_finished = (current_waypoint.x + map_coverage_offset_) > end_position.x
-        && abs((current_waypoint.x + map_coverage_offset_) - end_position.x) > 0.05;
-      current_waypoint.x = (current_waypoint.x + map_coverage_offset_) < end_position.x
-                            ? current_waypoint.x + map_coverage_offset_
-                            : end_position.x;
+      if (start_position.x < end_position.x)
+      {
+        is_finished = (current_waypoint.x + map_coverage_offset_) > end_position.x
+          && abs((current_waypoint.x + map_coverage_offset_) - end_position.x) > 0.05;
+        current_waypoint.x = (current_waypoint.x + map_coverage_offset_) < end_position.x
+                              ? current_waypoint.x + map_coverage_offset_
+                              : end_position.x;
+      }
+      else
+      {
+        is_finished = (current_waypoint.x - map_coverage_offset_) < end_position.x
+          && abs((current_waypoint.x - map_coverage_offset_) - end_position.x) > 0.05;
+        current_waypoint.x = (current_waypoint.x - map_coverage_offset_) > end_position.x
+                              ? current_waypoint.x - map_coverage_offset_
+                              : end_position.x;
+      }
     }
-    else
+    else if (type == "vertical")
     {
-      is_finished = (current_waypoint.x - map_coverage_offset_) < end_position.x
-        && abs((current_waypoint.x - map_coverage_offset_) - end_position.x) > 0.05;
-      current_waypoint.x = (current_waypoint.x - map_coverage_offset_) > end_position.x
-                            ? current_waypoint.x - map_coverage_offset_
-                            : end_position.x;
+      if (start_position.y < end_position.y)
+      {
+        is_finished = (current_waypoint.y + map_coverage_offset_) > end_position.y
+          && abs((current_waypoint.y + map_coverage_offset_) - end_position.y) > 0.05;
+        current_waypoint.y = (current_waypoint.y + map_coverage_offset_) < end_position.y
+                              ? current_waypoint.y + map_coverage_offset_
+                              : end_position.y;
+      }
+      else
+      {
+        is_finished = (current_waypoint.y - map_coverage_offset_) < end_position.y
+          && abs((current_waypoint.y - map_coverage_offset_) - end_position.y) > 0.05;
+        current_waypoint.y = (current_waypoint.y - map_coverage_offset_) > end_position.y
+                              ? current_waypoint.y - map_coverage_offset_
+                              : end_position.y;
+      }
     }
   }
 }
