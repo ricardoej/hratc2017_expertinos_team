@@ -17,6 +17,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <tf/transform_datatypes.h>
 #include <move_base_msgs/MoveBaseAction.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Bool.h>
 #include "hratc2017/map_coverage.h"
 #include "utilities/ros_node.h"
@@ -37,6 +38,7 @@ private:
   MoveBaseClient move_base_client_;
   ros::Subscriber corners_sub_;
   ros::Subscriber scanning_sub_;
+  ros::Subscriber set_mine_sub_;
   ros::Publisher waypoints_pub_;
   MapCoverage* map_;
   bool active_goal_;
@@ -47,9 +49,9 @@ private:
   void sendGoal(double x, double y, double theta = 0.0);
   void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
+  void setMineCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
   void goalActiveCallback();
-  void
-  feedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr& feedback);
+  void feedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr& feedback);
   void resultCallback(const actionlib::SimpleClientGoalState& state,
                       const move_base_msgs::MoveBaseResult::ConstPtr& result);
   void publishWaypoint(const geometry_msgs::Point& waypoint) const;

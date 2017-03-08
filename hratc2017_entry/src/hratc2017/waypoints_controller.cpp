@@ -27,6 +27,8 @@ WaypointsController::WaypointsController(ros::NodeHandle* nh)
       nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
   scanning_sub_ = nh->subscribe("start_scanning", 1,
                                 &WaypointsController::scanningCallback, this);
+  set_mine_sub_ = nh->subscribe("/HRATC_FW/set_mine", 1,
+                                &WaypointsController::setMineCallback, this);
   waypoints_pub_ =
       nh->advertise<visualization_msgs::Marker>("waypoint_markers", 0);
 }
@@ -134,16 +136,19 @@ void WaypointsController::cornersCallback(
   }
   ros::NodeHandle pnh("~");
   double map_coverage_offset;
-  pnh.param("map_coverage_offset", map_coverage_offset,
+  pnh.param("/waypoints_controller/map_coverage_offset", map_coverage_offset,
             DEFAULT_MAP_COVERAGE_OFFSET);
   double map_coverage_margin;
-  pnh.param("map_coverage_offset", map_coverage_margin,
+  pnh.param("/waypoints_controller/map_coverage_margin", map_coverage_margin,
             DEFAULT_MAP_COVERAGE_MARGIN);
+  double landmine_radius_area;
+  pnh.param("/waypoints_controller/landmine_radius_area", landmine_radius_area,
+            DEFAULT_LANDMINE_RADIUS_AREA);
   try
   {
     map_ =
-        new MapCoverage(corners, "relative", map_coverage_offset, map_coverage_margin);
-    ROS_INFO("Map created: %s", map_->c_str());
+        new MapCoverage(corners, "relative", map_coverage_offset, map_coverage_margin, landmine_radius_area);
+    ROS_INFO("%s", map_->c_str());
   }
   catch (utilities::Exception ex)
   {
@@ -163,6 +168,15 @@ void WaypointsController::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
     scanning_ = msg->data;
     ROS_DEBUG("Is scanning? %s.", scanning_ ? "TRUE" : "FALSE");
   }
+}
+
+/**
+ * @brief WaypointsController::setMineCallback receives a found mine
+ * @param msg mine
+ */
+void WaypointsController::setMineCallback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+	map_->addMine(msg->pose.position);
 }
 
 /**
