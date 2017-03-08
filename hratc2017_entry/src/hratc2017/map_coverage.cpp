@@ -10,6 +10,7 @@
  */
 
 #include "hratc2017/map_coverage.h"
+#include <ros/ros.h>
 
 namespace hratc2017
 {
@@ -87,16 +88,17 @@ MapCoverage::~MapCoverage() {}
 geometry_msgs::Point MapCoverage::getNextWaypoint() const 
 {
   geometry_msgs::Point next_point = waypoints_.front();
+  geometry_msgs::Point landmine;
 
-  if (isInsideMineArea(next_point))
+  if (isInsideMineArea(next_point, landmine))
   {
       if (next_point.y > 0)
       {
-        next_point.y -= landmine_radius_area_;
+        next_point.y = landmine.y - landmine_radius_area_;
       }
       else
       {
-        next_point.y += landmine_radius_area_; 
+        next_point.y = landmine.y + landmine_radius_area_; 
       }
   }
   
@@ -146,31 +148,36 @@ std::string MapCoverage::str() const
      << right_bottom_corner_.y;
   ss << "), right top: (" << right_top_corner_.x << ", " << right_top_corner_.y;
   ss << "), waypoints: ";
+  ss << waypoints_str();
   return ss.str();
+}
+
+/**
+ * @brief MapCoverage::waypoints_str
+ * @return
+ */
+std::string MapCoverage::waypoints_str() const 
+{
+  std::ostringstream ss;
+  for (std::list<geometry_msgs::Point>::const_iterator ci = waypoints_.begin(); ci != waypoints_.end(); ++ci)
+  {
+    ss << " (" << ci->x << ", " << ci->y << ")";
+  }
+  return ss.str(); 
 }
 
 /**
  * @brief MapCoverage::c_str
  * @return
  */
-const char* MapCoverage::c_str() const 
-{
-  std::string buf("Map coverage strategy:");
-  for (std::list<geometry_msgs::Point>::const_iterator ci = waypoints_.begin(); ci != waypoints_.end(); ++ci)
-  {
-    std::ostringstream stringStream;
-    stringStream << " (" << ci->x << ", " << ci->y << ", " << ci->z << ")";
-    buf.append(stringStream.str());
-  }
-  return buf.c_str(); 
-}
+const char* MapCoverage::c_str() const { return str().c_str(); }
 
 /**
  * @brief MapCoverage::generateWaypoints generates the waypoint/map coverage strategy
  */
 void MapCoverage::generateWaypoints()
 {
-  generateWaypoints(left_bottom_corner_, right_bottom_corner_);
+  generateWaypoints(left_top_corner_, right_top_corner_);
 }
 
 /**
@@ -179,16 +186,35 @@ void MapCoverage::generateWaypoints()
 void MapCoverage::generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position)
 {
   clear();
-  geometry_msgs::Point last_waypoint(end_position);
   geometry_msgs::Point current_waypoint(start_position);
-  while (current_waypoint.x <= last_waypoint.x)
+
+  bool is_finished = start_position.x == end_position.x
+                      && start_position.y == end_position.y;
+
+  while (!is_finished)
   {
     waypoints_.push_back(current_waypoint);
     current_waypoint.y = current_waypoint.y == left_bottom_corner_.y
                              ? left_top_corner_.y
                              : left_bottom_corner_.y;
     waypoints_.push_back(current_waypoint);
-    current_waypoint.x += map_coverage_offset_;
+
+    if (start_position.x < end_position.x)
+    {
+      is_finished = (current_waypoint.x + map_coverage_offset_) > end_position.x
+        && abs((current_waypoint.x + map_coverage_offset_) - end_position.x) > 0.05;
+      current_waypoint.x = (current_waypoint.x + map_coverage_offset_) < end_position.x
+                            ? current_waypoint.x + map_coverage_offset_
+                            : end_position.x;
+    }
+    else
+    {
+      is_finished = (current_waypoint.x - map_coverage_offset_) < end_position.x
+        && abs((current_waypoint.x - map_coverage_offset_) - end_position.x) > 0.05;
+      current_waypoint.x = (current_waypoint.x - map_coverage_offset_) > end_position.x
+                            ? current_waypoint.x - map_coverage_offset_
+                            : end_position.x;
+    }
   }
 }
 
@@ -214,13 +240,14 @@ void MapCoverage::addMine(geometry_msgs::Point position)
 /**
  * @brief MapCoverage::isInsideMineArea verifies if a waypoint is inside a mine area
  */
-bool MapCoverage::isInsideMineArea(geometry_msgs::Point waypoint) const
+bool MapCoverage::isInsideMineArea(geometry_msgs::Point waypoint, geometry_msgs::Point &landmine) const
 {
   for (std::list<geometry_msgs::Point>::const_iterator mine_point = mines_.begin(); mine_point != mines_.end(); ++mine_point)
   {
     double distance = sqrt(pow((waypoint.x - mine_point->x), 2) + pow((waypoint.y - mine_point->y), 2));
     if (distance <= landmine_radius_area_)
     {
+      landmine = *mine_point;
       return true;
     }
   }

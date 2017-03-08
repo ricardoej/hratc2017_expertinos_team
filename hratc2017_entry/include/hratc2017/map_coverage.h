@@ -18,7 +18,7 @@
 #include "utilities/exception.h"
 
 #define DEFAULT_MAP_COVERAGE_OFFSET 1.0
-#define DEFAULT_MAP_COVERAGE_MARGIN 1.5
+#define DEFAULT_MAP_COVERAGE_MARGIN 2.0
 #define DEFAULT_LANDMINE_RADIUS_AREA 1.0
 #define ABSOLUTE_MAP_COORDINATE_TYPE "absolute"
 #define RELATIVE_MAP_COORDINATE_TYPE "relative"
@@ -60,10 +60,11 @@ private:
   geometry_msgs::Point right_bottom_corner_;
   std::list<geometry_msgs::Point> waypoints_;
   std::list<geometry_msgs::Point> mines_;
+  std::string waypoints_str() const;
   void generateWaypoints();
   void generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position);
   void clear();
-  bool isInsideMineArea(geometry_msgs::Point waypoint) const;
+  bool isInsideMineArea(geometry_msgs::Point waypoint, geometry_msgs::Point &landmine) const;
 };
 }
 

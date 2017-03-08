@@ -136,13 +136,13 @@ void WaypointsController::cornersCallback(
   }
   ros::NodeHandle pnh("~");
   double map_coverage_offset;
-  pnh.param("/waypoints_controller/map_coverage_offset", map_coverage_offset,
+  pnh.param("map_coverage_offset", map_coverage_offset,
             DEFAULT_MAP_COVERAGE_OFFSET);
   double map_coverage_margin;
-  pnh.param("/waypoints_controller/map_coverage_margin", map_coverage_margin,
+  pnh.param("map_coverage_margin", map_coverage_margin,
             DEFAULT_MAP_COVERAGE_MARGIN);
   double landmine_radius_area;
-  pnh.param("/waypoints_controller/landmine_radius_area", landmine_radius_area,
+  pnh.param("landmine_radius_area", landmine_radius_area,
             DEFAULT_LANDMINE_RADIUS_AREA);
   try
   {
