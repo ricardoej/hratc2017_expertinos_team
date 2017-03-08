@@ -147,7 +147,7 @@ void WaypointsController::cornersCallback(
   try
   {
     map_ =
-        new MapCoverage(corners, "relative", map_coverage_offset, map_coverage_margin, landmine_radius_area);
+        new MapCoverage(corners, RELATIVE_MAP_COORDINATE_TYPE, map_coverage_offset, map_coverage_margin, landmine_radius_area);
     ROS_INFO("%s", map_->c_str());
   }
   catch (utilities::Exception ex)

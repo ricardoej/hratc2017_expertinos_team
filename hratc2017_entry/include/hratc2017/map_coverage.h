@@ -20,6 +20,8 @@
 #define DEFAULT_MAP_COVERAGE_OFFSET 1.0
 #define DEFAULT_MAP_COVERAGE_MARGIN 1.5
 #define DEFAULT_LANDMINE_RADIUS_AREA 1.0
+#define ABSOLUTE_MAP_COORDINATE_TYPE "absolute"
+#define RELATIVE_MAP_COORDINATE_TYPE "relative"
 
 namespace hratc2017
 {
@@ -27,7 +29,7 @@ class MapCoverage
 {
 public:
   MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg,
-      std::string type = "absolute",
+      std::string type = RELATIVE_MAP_COORDINATE_TYPE,
       double map_coverage_offset = DEFAULT_MAP_COVERAGE_OFFSET,
       double map_coverage_margin = DEFAULT_MAP_COVERAGE_MARGIN,
       double landmine_radius_area = DEFAULT_LANDMINE_RADIUS_AREA);
@@ -59,6 +61,7 @@ private:
   std::list<geometry_msgs::Point> waypoints_;
   std::list<geometry_msgs::Point> mines_;
   void generateWaypoints();
+  void generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position);
   void clear();
   bool isInsideMineArea(geometry_msgs::Point waypoint) const;
 };

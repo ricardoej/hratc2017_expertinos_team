@@ -33,7 +33,7 @@ MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg, std::str
   right_bottom_corner_ = msg->markers[1].pose.position;
   right_top_corner_ = msg->markers[2].pose.position;
   left_top_corner_ = msg->markers[3].pose.position;
-  if (type == "relative")
+  if (type == RELATIVE_MAP_COORDINATE_TYPE)
   {
     double x_size(std::abs(left_top_corner_.x - right_top_corner_.x));
     double y_size(std::abs(left_bottom_corner_.x - right_bottom_corner_.x));
@@ -170,9 +170,17 @@ const char* MapCoverage::c_str() const
  */
 void MapCoverage::generateWaypoints()
 {
+  generateWaypoints(left_bottom_corner_, right_bottom_corner_);
+}
+
+/**
+ * @brief MapCoverage::generateWaypoints generates the waypoint/map coverage strategy
+ */
+void MapCoverage::generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position)
+{
   clear();
-  geometry_msgs::Point last_waypoint(right_bottom_corner_);
-  geometry_msgs::Point current_waypoint(left_bottom_corner_);
+  geometry_msgs::Point last_waypoint(end_position);
+  geometry_msgs::Point current_waypoint(start_position);
   while (current_waypoint.x <= last_waypoint.x)
   {
     waypoints_.push_back(current_waypoint);
