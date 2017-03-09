@@ -22,7 +22,7 @@ namespace hratc2017
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
     : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
-      s3_timer_(0), s4_timer_(0), scanning_(false)
+      s3_timer_(0), scanning_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -51,10 +51,12 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   pnh.param("spin_time", spin_time_, SPIN_TIME);
   ROS_INFO("   Spin_time %f", spin_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
+  moving_away_pub_ = nh->advertise<geometry_msgs::Twist>("moving_away", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
-      nh->subscribe("start_scanning", 1, &MetalScanner::scanningCallback, this);
-  sampler_ = nh->createTimer(ros::Duration(sample_time_), &MetalScanner::timerCallback, this);
+      nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
+  sampler_ = nh->createTimer(ros::Duration(sample_time_),
+                             &MetalScanner::timerCallback, this);
 }
 
 /**
@@ -63,6 +65,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
 MetalScanner::~MetalScanner()
 {
   cmd_vel_pub_.shutdown();
+  moving_away_pub_.shutdown();
   coils_sub_.shutdown();
   scanning_sub_.shutdown();
 }
@@ -98,11 +101,11 @@ void MetalScanner::setNextState()
     {
       ref_coil_signal_ += coil_signal_increment_;
       current_state_ = ref_coil_signal_ <= max_coil_signal_
-                           ? states::S2_SCANNING_FOWARD
+                           ? states::S2_SCANNING
                            : states::S3_MOVING_AWAY;
     }
     break;
-  case states::S2_SCANNING_FOWARD:
+  case states::S2_SCANNING:
     if (coils_.getLeftValue() >= ref_coil_signal_ ||
         coils_.getRightValue() >= ref_coil_signal_)
     {
@@ -114,19 +117,13 @@ void MetalScanner::setNextState()
     {
       s3_timer_ = ros::Time::now();
     }
-    else if (!s3_timer_.isZero() && ((ros::Time::now() - s3_timer_).toSec() > safe_time_))
+    else if (!s3_timer_.isZero() &&
+             ((ros::Time::now() - s3_timer_).toSec() > safe_time_))
     {
-      s4_timer_ = ros::Time::now();
-      current_state_ = states::S4_CHANGING_DIRECTION;
+      current_state_ = states::S4_RESETTING;
     }
     break;
-  case states::S4_CHANGING_DIRECTION:
-    if ((ros::Time::now() - s4_timer_).toSec() > spin_time_)
-    {
-      current_state_ = states::S5_RESETTING;
-    }
-    break;
-  case states::S5_RESETTING:
+  case states::S4_RESETTING:
     reset();
     break;
   }
@@ -150,19 +147,16 @@ void MetalScanner::setVelocity()
     wz = error_ * Kp_;
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
     break;
-  case states::S2_SCANNING_FOWARD:
+  case states::S2_SCANNING:
     ROS_DEBUG("   S2 - Scanning foward!");
     setVelocity(vx_, 0);
     break;
   case states::S3_MOVING_AWAY:
     ROS_DEBUG("   S3 - Moving away!");
+    setMovingAway(true);
     setVelocity(-vx_, 0);
     break;
-  case states::S4_CHANGING_DIRECTION:
-    ROS_DEBUG("   S4 - Changing Direction!");
-    setVelocity(-vx_, 0);
-    break;
-  case states::S5_RESETTING:
+  case states::S4_RESETTING:
     ROS_DEBUG("   S5 - Resetting!");
     break;
   }
@@ -182,6 +176,17 @@ void MetalScanner::setVelocity(double vx, double wz)
 }
 
 /**
+ * @brief MetalScanner::setMovingAway
+ * @param moving_away
+ */
+void MetalScanner::setMovingAway(bool moving_away)
+{
+  std_msgs::Bool msg;
+  msg.data = moving_away;
+  moving_away_pub_.publish(msg);
+}
+
+/**
  * @brief MetalScanner::pauseCallback
  * @param msg
  */
@@ -198,7 +203,11 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
   }
 }
 
-void MetalScanner::timerCallback(const ros::TimerEvent &event)
+/**
+ * @brief MetalScanner::timerCallback
+ * @param event
+ */
+void MetalScanner::timerCallback(const ros::TimerEvent& event)
 {
   derivative_ = coils_.getMeanDerivedValue();
 }
@@ -210,6 +219,7 @@ void MetalScanner::reset()
 {
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
+  setMovingAway(false);
   setVelocity(0, 0);
 }
 }

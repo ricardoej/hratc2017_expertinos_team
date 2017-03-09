@@ -37,7 +37,7 @@ public:
   virtual ~LandmineAnalyzer();
 
 private:
-  ros::Publisher pause_pub_;
+  ros::Publisher scanning_pub_;
   ros::Publisher set_mine_pub_;
   ros::Publisher set_fake_mine_pub_;
   ros::Publisher polygon_pub_;

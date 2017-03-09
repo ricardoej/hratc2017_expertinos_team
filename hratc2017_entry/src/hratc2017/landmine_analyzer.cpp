@@ -46,7 +46,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 10, true);
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 1);
-  pause_pub_ = nh->advertise<std_msgs::Bool>("start_scanning", 1, true);
+  scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
       nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
@@ -61,7 +61,7 @@ LandmineAnalyzer::~LandmineAnalyzer()
   set_mine_pub_.shutdown();
   set_fake_mine_pub_.shutdown();
   polygon_pub_.shutdown();
-  pause_pub_.shutdown();
+  scanning_pub_.shutdown();
   coils_sub_.shutdown();
   filtered_coils_pub_.shutdown();
 }
@@ -295,7 +295,7 @@ void LandmineAnalyzer::setScanning(bool scanning)
 {
   std_msgs::Bool msg;
   msg.data = scanning;
-  pause_pub_.publish(msg);
+  scanning_pub_.publish(msg);
 }
 
 /**

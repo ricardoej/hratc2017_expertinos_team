@@ -42,10 +42,9 @@ enum StateEnum
 {
   S0_SETTING_UP,
   S1_ALIGNING,
-  S2_SCANNING_FOWARD,
+  S2_SCANNING,
   S3_MOVING_AWAY,
-  S4_CHANGING_DIRECTION,
-  S5_RESETTING
+  S4_RESETTING
 };
 }
 
@@ -59,9 +58,9 @@ public:
 
 private:
   ros::Time s3_timer_;
-  ros::Time s4_timer_;
   ros::Timer sampler_;
   ros::Publisher cmd_vel_pub_;
+  ros::Publisher moving_away_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber scanning_sub_;
   StateEnum current_state_;
@@ -85,6 +84,7 @@ private:
   void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
+  void setMovingAway(bool moving_away);
   void reset();
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
   void timerCallback(const ros::TimerEvent& event);

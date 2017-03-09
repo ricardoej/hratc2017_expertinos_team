@@ -21,12 +21,14 @@ namespace hratc2017
  */
 WaypointsController::WaypointsController(ros::NodeHandle* nh)
     : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true),
-      active_goal_(false), scanning_(false)
+      active_goal_(false), scanning_(false), moving_away_(false)
 {
   corners_sub_ =
       nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
-  scanning_sub_ = nh->subscribe("start_scanning", 1,
+  scanning_sub_ = nh->subscribe("scanning", 1,
                                 &WaypointsController::scanningCallback, this);
+  moving_away_sub_ = nh->subscribe("moving_away", 1,
+                                &WaypointsController::movingAwayCallback, this);
   set_mine_sub_ = nh->subscribe("/HRATC_FW/set_mine", 1,
                                 &WaypointsController::setMineCallback, this);
   waypoints_pub_ =
@@ -40,6 +42,7 @@ WaypointsController::~WaypointsController()
 {
   corners_sub_.shutdown();
   scanning_sub_.shutdown();
+  moving_away_sub_.shutdown();
   waypoints_pub_.shutdown();
   if (map_)
   {
@@ -60,12 +63,12 @@ void WaypointsController::controlLoop()
   }
   else
   {
-    if (scanning_ && active_goal_)
+    if ((scanning_ || moving_away_) && active_goal_)
     {
       move_base_client_.cancelAllGoals();
       ROS_INFO("Sent a cancel all goals.");
     }
-    else if (!scanning_ && !active_goal_ && map_ && !map_->empty())
+    else if (!scanning_ && ! moving_away_ && !active_goal_ && map_ && !map_->empty())
     {
       sendGoal(map_->getNextWaypoint());
       publishWaypoint(map_->getNextWaypoint());
@@ -167,6 +170,19 @@ void WaypointsController::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
   {
     scanning_ = msg->data;
     ROS_DEBUG("Is scanning? %s.", scanning_ ? "TRUE" : "FALSE");
+  }
+}
+
+/**
+ * @brief WaypointsController::movingAwayCallback
+ * @param msg
+ */
+void WaypointsController::movingAwayCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+  if (moving_away_ != msg->data)
+  {
+    moving_away_ = msg->data;
+    ROS_DEBUG("Is moving away? %s.", moving_away_ ? "TRUE" : "FALSE");
   }
 }
 

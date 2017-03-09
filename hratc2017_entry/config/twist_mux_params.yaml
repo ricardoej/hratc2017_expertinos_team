@@ -12,7 +12,12 @@ topics:
 
 locks:
 -
-  name    : start_scanning
-  topic   : start_scanning
+  name    : scanning
+  topic   : scanning
+  timeout : 0.0
+  priority: 80
+-
+  name    : moving_away
+  topic   : moving_away
   timeout : 0.0
   priority: 80
