@@ -30,6 +30,8 @@
 #define MAX_COIL_SIGNAL 0.8
 #define THRESHOLD 0.5
 #define SAFE_TIME 2.0
+#define ROTATION_TIME 2.0
+#define MOVING_AWAY_TIME 3.0
 #define NUMBER_OF_NEGATIVE_SAMPLES 3
 #define SAMPLE_TIME 0.1
 
@@ -77,6 +79,8 @@ private:
   double min_coil_signal_;
   double max_coil_signal_;
   double safe_time_;
+  double rotation_time_;
+  double moving_away_time_;
   double sample_time_;
   bool scanning_;
   bool moving_away_;

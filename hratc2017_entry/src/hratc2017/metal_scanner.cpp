@@ -47,7 +47,11 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   pnh.param("sample_time", sample_time_, SAMPLE_TIME);
   ROS_INFO("   Sample time: %f", sample_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
-  ROS_INFO("   Safe_time %f", safe_time_);
+  ROS_INFO("   Safe time %f", safe_time_);
+  pnh.param("rotation_time", rotation_time_, ROTATION_TIME);
+  ROS_INFO("   Rotation time %f", rotation_time_);
+  pnh.param("moving_away_time", moving_away_time_, MOVING_AWAY_TIME);
+  ROS_INFO("   Moving away time %f", moving_away_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
@@ -115,14 +119,22 @@ void MetalScanner::setNextState()
     }
     else if ((ros::Time::now() - timer_).toSec() > safe_time_)
     {
+      timer_ = ros::Time::now();
       current_state_ = states::S4_CHANGING_DIRECTION;
     }
     break;
   case states::S4_CHANGING_DIRECTION:
-    current_state_ = states::S5_MOVING_AWAY;
+    if ((ros::Time::now() - timer_).toSec() > rotation_time_)
+    {
+      timer_ = ros::Time::now();
+      current_state_ = states::S5_MOVING_AWAY;
+    }
     break;
   case states::S5_MOVING_AWAY:
-    reset();
+    if ((ros::Time::now() - timer_).toSec() > rotation_time_)
+    {
+      reset();
+    }
     break;
   }
 }
@@ -207,7 +219,9 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
   {
     scanning_ = msg->data;
     ROS_INFO("   scanning: %s", scanning_ ? "true" : "false");
-    if (!scanning_ && !moving_away_)
+    //whenever emergent stop is needed while scanning or
+    //whenever need to start scanning again while moving away
+    if (scanning_ == moving_away_)
     {
       reset();
     }
