@@ -30,6 +30,7 @@
 #define SAFE_COIL_SIGNAL 0.35
 #define THRESHOLD 0.5
 #define SAFE_TIME 2.0
+#define SPIN_TIME 4.0
 #define NUMBER_OF_NEGATIVE_SAMPLES 3
 #define SAMPLE_TIME 0.1
 
@@ -76,6 +77,7 @@ private:
   double coil_signal_tolerance_;
   double safe_coil_signal_;
   double safe_time_;
+  double spin_time_;
   double sample_time_;
   bool scanning_;
   float derivative_;

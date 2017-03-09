@@ -60,6 +60,8 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Sample time: %f", sample_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
+  pnh.param("spin_time", spin_time_, SPIN_TIME);
+  ROS_INFO("   Spin_time %f", spin_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
@@ -131,7 +133,7 @@ void MetalScanner::setNextState()
     }
     break;
   case states::S4_CHANGING_DIRECTION:
-    if ((ros::Time::now() - s4_timer_).toSec() > safe_time_)
+    if ((ros::Time::now() - s4_timer_).toSec() > spin_time_)
     {
       current_state_ = states::S5_RESETTING;
     }
