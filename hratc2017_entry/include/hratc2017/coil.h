@@ -1,9 +1,9 @@
 /**
  *  This header file defines the Coil class.
  *
- *  Version: 1.0.1
+ *  Version: 1.0.3
  *  Created on: 16/01/2017
- *  Modified on: 16/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -14,9 +14,10 @@
 #include <list>
 #include <sstream>
 
-#define HIGH_COIL_SIGNAL_THRESHOLD 0.65
-#define LOW_COIL_SIGNAL_THRESHOLD 0.45
-#define COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS 6
+#define DEFAULT_DERIVATIVE_SAMPLE_TIME 0.1
+#define DEFAULT_LOW_COIL_SIGNAL_THRESHOLD 0.45
+#define DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD 0.65
+#define DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS 6
 
 namespace hratc2017
 {
@@ -24,12 +25,16 @@ namespace hratc2017
 class Coil
 {
 public:
-  Coil(std::string frame_id, float low_threshold = LOW_COIL_SIGNAL_THRESHOLD,
-       float high_threshold = HIGH_COIL_SIGNAL_THRESHOLD,
-       int number_of_observations = COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  Coil(std::string frame_id, float sample_time = DEFAULT_DERIVATIVE_SAMPLE_TIME,
+       float low_threshold = DEFAULT_LOW_COIL_SIGNAL_THRESHOLD,
+       float high_threshold = DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD,
+       int number_of_observations =
+           DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
   virtual ~Coil();
   std::string getFrameId() const;
   float getValue() const;
+  float getDerivedValue() const;
+  void setSampleTime(double sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
   void setNumberOfObservations(int number_of_observations);
@@ -42,6 +47,8 @@ public:
 private:
   std::string frame_id_;
   float value_;
+  float last_value_;
+  float sample_time_;
   float low_threshold_;
   float high_threshold_;
   int number_of_observations_;

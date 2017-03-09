@@ -2,9 +2,9 @@
  *  This source file implements the LandmineAnalyzer class, which is
  *based on the ROSNode helper class. It controls the landmine_analyzer_node.
  *
- *  Version: 1.0.2
+ *  Version: 1.0.3
  *  Created on: 30/01/2017
- *  Modified on: 24/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -26,20 +26,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
     : ROSNode(nh, 30), coils_(new tf::TransformListener())
 {
   ros::NodeHandle pnh("~");
-  double threshold;
-  pnh.param("low_coil_signal_threshold", threshold, LOW_COIL_SIGNAL_THRESHOLD);
-  coils_.setLowThreshold(threshold);
-  ROS_INFO("   Low coil signal threshold: %f", threshold);
-  pnh.param("high_coil_signal_threshold", threshold,
-            HIGH_COIL_SIGNAL_THRESHOLD);
-  coils_.setHighThreshold(threshold);
-  ROS_INFO("   High coil signal threshold: %f", threshold);
-  int number_of_observations;
-  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
-            COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
-  coils_.setNumberOfObservations(number_of_observations);
-  ROS_INFO("   Coil signal filter number of observations: %d",
-           number_of_observations);
+  coils_.setParameters(pnh);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Max coil signal: %lf", max_coil_signal_);
   pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
@@ -149,8 +136,6 @@ void LandmineAnalyzer::controlLoop()
   }
   //é necessário ficar publicando para twist_mux travar o navigation
   // constantemente
-  if (landmine_.polygon.points.size() == 2)
-    ROS_ERROR("X0: %f, Y0: %f", landmine_.polygon.points[0].x, landmine_.polygon.points[0].y);
   sampling_ = true;
   setScanning(true);
   landmine_.header.stamp = ros::Time::now();

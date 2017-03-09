@@ -2,9 +2,9 @@
  *  This source file implements the Coils class. This class encapsulates helpers
  *methods that evaluates metal detector readings.
  *
- *  Version: 1.0.1
+ *  Version: 1.0.3
  *  Created on: 30/01/2017
- *  Modified on: 20/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -53,12 +53,44 @@ float Coils::getLeftValue() const { return left_.getValue(); }
  */
 float Coils::getRightValue() const { return right_.getValue(); }
 
-float Coils::getDerivative(float sample_time)
+/**
+ * @brief Coils::getMeanValue
+ * @return
+ */
+float Coils::getMeanValue() const
 {
-  float current_sample((getRightValue() + getLeftValue()) / 2);
-  float delta_sample(current_sample - last_sample_);
-  last_sample_ = current_sample;
-  return delta_sample / sample_time;
+  return (left_.getValue() + right_.getValue()) / 2;
+}
+
+/**
+ * @brief Coils::getLeftDerivedValue
+ * @return
+ */
+float Coils::getLeftDerivedValue() const { return left_.getDerivedValue(); }
+
+/**
+ * @brief Coils::getRightDerivedValue
+ * @return
+ */
+float Coils::getRightDerivedValue() const { return right_.getDerivedValue(); }
+
+/**
+ * @brief Coils::getMeanDerivedValue
+ * @return
+ */
+float Coils::getMeanDerivedValue() const
+{
+  return (left_.getDerivedValue() + right_.getDerivedValue()) / 2;
+}
+
+/**
+ * @brief Coils::setSampleTime
+ * @param sample_time
+ */
+void Coils::setSampleTime(double sample_time)
+{
+  left_.setSampleTime(sample_time);
+  right_.setSampleTime(sample_time);
 }
 
 /**
@@ -225,6 +257,31 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
 {
   left_ = msg.left_coil;
   right_ = msg.right_coil;
+}
+
+/**
+ * @brief Coils::setParameters
+ */
+void Coils::setParameters(const ros::NodeHandle &pnh)
+{
+  double aux;
+  pnh.param("derivative_sample_time", aux, DEFAULT_DERIVATIVE_SAMPLE_TIME);
+  ROS_INFO("   Derivative sample time: %f", aux);
+  setSampleTime(aux);
+  pnh.param("low_coil_signal_threshold", aux,
+            DEFAULT_LOW_COIL_SIGNAL_THRESHOLD);
+  ROS_INFO("   Low coil signal threshold: %f", aux);
+  setLowThreshold(aux);
+  pnh.param("high_coil_signal_threshold", aux,
+            DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD);
+  ROS_INFO("   High coil signal threshold: %f", aux);
+  setHighThreshold(aux);
+  int number_of_observations;
+  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
+            DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
+  ROS_INFO("   Coil signal filter number of observations: %d",
+           number_of_observations);
+  setNumberOfObservations(number_of_observations);
 }
 
 /**

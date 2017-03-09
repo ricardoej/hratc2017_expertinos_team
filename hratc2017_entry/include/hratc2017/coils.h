@@ -31,7 +31,11 @@ public:
   virtual ~Coils();
   float getLeftValue() const;
   float getRightValue() const;
-  float getDerivative(float sample_time);
+  float getMeanValue() const;
+  float getLeftDerivedValue() const;
+  float getRightDerivedValue() const;
+  float getMeanDerivedValue() const;
+  void setSampleTime(double sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
   void setNumberOfObservations(int number_of_observations);
@@ -52,6 +56,7 @@ public:
   const char* c_str() const;
   void operator=(const metal_detector_msgs::Coil::ConstPtr& msg);
   void operator=(const metal_detector_msgs::Coil& msg);
+  void setParameters(const ros::NodeHandle& pnh);
   void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
   geometry_msgs::PoseStamped getLeftPose() const;
   geometry_msgs::PoseStamped getRightPose() const;

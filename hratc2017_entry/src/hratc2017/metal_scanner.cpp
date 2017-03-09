@@ -2,9 +2,9 @@
  *  This source file implements the MetalScanner class, which is
  *based on the ROSNode helper class. It controls the metal_scanner_node.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.3
  *  Created on: 09/02/2017
- *  Modified on: 13/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -25,19 +25,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
       s3_timer_(0), s4_timer_(0), scanning_(false)
 {
   ros::NodeHandle pnh("~");
-  double threshold;
-  pnh.param("low_coil_signal_threshold", threshold, LOW_COIL_SIGNAL_THRESHOLD);
-  coils_.setLowThreshold(threshold);
-  ROS_INFO("   Low coil signal threshold: %f", threshold);
-  pnh.param("high_coil_signal_threshold", threshold,
-            HIGH_COIL_SIGNAL_THRESHOLD);
-  coils_.setHighThreshold(threshold);
-  ROS_INFO("   High coil signal threshold: %f", threshold);
-  int number_of_observations;
-  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
-            COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
-  coils_.setNumberOfObservations(number_of_observations);
-  ROS_INFO("   Coil signal filter number of observations: %d", number_of_observations);
+  coils_.setParameters(pnh);
   pnh.param("linear_velocity_x", vx_, LINEAR_VELOCITY_X);
   ROS_INFO("   Linear velocity x: %f", vx_);
   pnh.param("angular_velocity_z", wz_, ANGULAR_VELOCITY_Z);
@@ -176,7 +164,6 @@ void MetalScanner::setVelocity()
     break;
   case states::S5_RESETTING:
     ROS_DEBUG("   S5 - Resetting!");
-    setVelocity(0, 0);
     break;
   }
 }
@@ -213,8 +200,7 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
 
 void MetalScanner::timerCallback(const ros::TimerEvent &event)
 {
-  derivative_ = coils_.getDerivative(sample_time_);
-  //ROS_INFO("   Derivative value: %f", derivative_);
+  derivative_ = coils_.getMeanDerivedValue();
 }
 
 /**
