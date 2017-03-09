@@ -40,12 +40,11 @@ namespace states
 enum StateEnum
 {
   S0_SETTING_UP,
-  S1_ALINGING,
+  S1_ALIGNING,
   S2_SCANNING_FOWARD,
-  S3_SCANNING_LEFT,
-  S4_SCANNING_RIGHT,
-  S5_MOVING_AWAY,
-  S6_CHANGING_DIRECTION
+  S3_MOVING_AWAY,
+  S4_CHANGING_DIRECTION,
+  S5_RESETTING
 };
 }
 
@@ -58,7 +57,8 @@ public:
   virtual ~MetalScanner();
 
 private:
-  ros::Time s6_timer_;
+  ros::Time s3_timer_;
+  ros::Time s4_timer_;
   ros::Timer sampler_;
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber coils_sub_;

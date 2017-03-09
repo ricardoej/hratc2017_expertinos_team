@@ -22,7 +22,7 @@ namespace hratc2017
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
     : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
-      scanning_(false)
+      s3_timer_(0), s4_timer_(0), scanning_(false)
 {
   ros::NodeHandle pnh("~");
   double threshold;
@@ -101,55 +101,43 @@ void MetalScanner::setNextState()
   {
   case states::S0_SETTING_UP:
     ref_coil_signal_ = min_coil_signal_ - coil_signal_increment_;
-    ROS_INFO("   State change (from S0 to S1)!");
-    current_state_ = states::S1_ALINGING;
+    current_state_ = states::S1_ALIGNING;
     break;
-  case states::S1_ALINGING:
+  case states::S1_ALIGNING:
     if (fabs(error_) <= coil_signal_tolerance_)
     {
       ref_coil_signal_ += coil_signal_increment_;
-      ROS_INFO("   State change (from S1 to S2 or S5)!");
       current_state_ = ref_coil_signal_ <= max_coil_signal_
                            ? states::S2_SCANNING_FOWARD
-                           : states::S5_MOVING_AWAY;
+                           : states::S3_MOVING_AWAY;
     }
     break;
   case states::S2_SCANNING_FOWARD:
     if (coils_.getLeftValue() >= ref_coil_signal_ ||
         coils_.getRightValue() >= ref_coil_signal_)
     {
-      ROS_INFO("   State change (from S2 to S3)!");
-      current_state_ = states::S1_ALINGING;
+      current_state_ = states::S1_ALIGNING;
     }
     break;
-  case states::S3_SCANNING_LEFT:
-    if (!coils_.isLeftHigh())
-    {
-      ROS_INFO("   State change (from S3 to S4)!");
-      current_state_ = states::S4_SCANNING_RIGHT;
-    }
-    break;
-  case states::S4_SCANNING_RIGHT:
-    if (!coils_.isRightHigh())
-    {
-      ROS_INFO("   State change (from S4 to S1)!");
-      current_state_ = states::S1_ALINGING;
-    }
-    break;
-  case states::S5_MOVING_AWAY:
+  case states::S3_MOVING_AWAY:
     if (coils_.isBothLow())
     {
-      s6_timer_ = ros::Time::now();
-      ROS_INFO("   State change (from S5 to S6)!");
-      current_state_ = states::S6_CHANGING_DIRECTION;
+      s3_timer_ = ros::Time::now();
+    }
+    else if (!s3_timer_.isZero() && ((ros::Time::now() - s3_timer_).toSec() > safe_time_))
+    {
+      s4_timer_ = ros::Time::now();
+      current_state_ = states::S4_CHANGING_DIRECTION;
     }
     break;
-  case states::S6_CHANGING_DIRECTION:
-    if ((ros::Time::now() - s6_timer_).toSec() > safe_time_)
+  case states::S4_CHANGING_DIRECTION:
+    if ((ros::Time::now() - s4_timer_).toSec() > safe_time_)
     {
-      ROS_INFO("   State change (from S6 to S0)!");
-      reset();
+      current_state_ = states::S5_RESETTING;
     }
+    break;
+  case states::S5_RESETTING:
+    reset();
     break;
   }
 }
@@ -166,8 +154,8 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
-  case states::S1_ALINGING: // P controller is implemented here
-    ROS_DEBUG("   S1 - Alinging!");
+  case states::S1_ALIGNING: // P controller is implemented here
+    ROS_DEBUG("   S1 - Aligning!");
     error_ = coils_.getLeftValue() - coils_.getRightValue();
     wz = error_ * Kp_;
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
@@ -176,21 +164,17 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S2 - Scanning foward!");
     setVelocity(vx_, 0);
     break;
-  case states::S3_SCANNING_LEFT:
-    ROS_DEBUG("   S3 - Scanning left!");
-    setVelocity(0, wz_);
-    break;
-  case states::S4_SCANNING_RIGHT:
-    ROS_DEBUG("   S4 - Scanning right!");
-    setVelocity(0, -wz_);
-    break;
-  case states::S5_MOVING_AWAY:
-    ROS_DEBUG("   S5 - Moving away!");
+  case states::S3_MOVING_AWAY:
+    ROS_DEBUG("   S3 - Moving away!");
     setVelocity(-vx_, 0);
     break;
-  case states::S6_CHANGING_DIRECTION:
-    ROS_DEBUG("   S6 - Moving away!");
+  case states::S4_CHANGING_DIRECTION:
+    ROS_DEBUG("   S4 - Changing Direction!");
     setVelocity(-vx_, 0);
+    break;
+  case states::S5_RESETTING:
+    ROS_DEBUG("   S5 - Resetting!");
+    setVelocity(0, 0);
     break;
   }
 }
