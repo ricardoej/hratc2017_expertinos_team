@@ -22,7 +22,7 @@ namespace hratc2017
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
     : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), angular_error_(0),
-      s3_timer_(0), scanning_(false), moving_away_(false)
+      timer_(0), scanning_(false), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -104,19 +104,25 @@ void MetalScanner::setNextState()
     if (coils_.getLeftValue() >= max_coil_signal_ ||
         coils_.getRightValue() >= max_coil_signal_)
     {
-      current_state_ = states::S3_MOVING_AWAY;
+      current_state_ = states::S3_MOVING_BACK;
       linear_reference_ = min_coil_signal_;
     }
     break;
-  case states::S3_MOVING_AWAY:
+  case states::S3_MOVING_BACK:
     if (!coils_.isBothLow())
     {
-      s3_timer_ = ros::Time::now();
+      timer_ = ros::Time::now();
     }
-    else if ((ros::Time::now() - s3_timer_).toSec() > safe_time_)
+    else if ((ros::Time::now() - timer_).toSec() > safe_time_)
     {
-      reset();
+      current_state_ = states::S4_CHANGING_DIRECTION;
     }
+    break;
+  case states::S4_CHANGING_DIRECTION:
+    current_state_ = states::S5_MOVING_AWAY;
+    break;
+  case states::S5_MOVING_AWAY:
+    reset();
     break;
   }
 }
@@ -145,13 +151,23 @@ void MetalScanner::setVelocity()
     setVelocity(0, wz);
     break;
   case states::S2_SCANNING:
-    ROS_INFO("   S2 - Scanning foward!");
+    ROS_INFO("   S2 - Scanning!");
     setVelocity(vx, wz);
     break;
-  case states::S3_MOVING_AWAY:
-    ROS_INFO("   S3 - Moving away!");
+  case states::S3_MOVING_BACK:
+    ROS_INFO("   S3 - Moving back!");
     setMovingAway(true);
     setVelocity(vx, wz);
+    break;
+  case states::S4_CHANGING_DIRECTION:
+    ROS_INFO("   S4 - Changing direction!");
+    setMovingAway(true);
+    setVelocity(0, wz_);
+    break;
+  case states::S5_MOVING_AWAY:
+    ROS_INFO("   S5 - Moving away!");
+    setMovingAway(true);
+    setVelocity(vx_, 0);
     break;
   }
 }

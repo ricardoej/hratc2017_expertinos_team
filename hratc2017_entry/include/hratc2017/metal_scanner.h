@@ -42,7 +42,9 @@ enum StateEnum
   S0_SETTING_UP,
   S1_ALIGNING,
   S2_SCANNING,
-  S3_MOVING_AWAY
+  S3_MOVING_BACK,
+  S4_CHANGING_DIRECTION,
+  S5_MOVING_AWAY
 };
 }
 
@@ -55,7 +57,7 @@ public:
   virtual ~MetalScanner();
 
 private:
-  ros::Time s3_timer_;
+  ros::Time timer_;
   ros::Timer sampler_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher moving_away_pub_;
