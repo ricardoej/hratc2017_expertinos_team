@@ -22,7 +22,7 @@ namespace hratc2017
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
     : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
-      s3_timer_(0), scanning_(false)
+      s3_timer_(0), scanning_(false), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -51,7 +51,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   pnh.param("spin_time", spin_time_, SPIN_TIME);
   ROS_INFO("   Spin_time %f", spin_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
-  moving_away_pub_ = nh->advertise<geometry_msgs::Twist>("moving_away", 1);
+  moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
@@ -75,7 +75,7 @@ MetalScanner::~MetalScanner()
  */
 void MetalScanner::controlLoop()
 {
-  if (!scanning_)
+  if (!scanning_ && !moving_away_)
   {
     ROS_DEBUG("   not scanning!!!");
     return;
@@ -120,7 +120,8 @@ void MetalScanner::setNextState()
     else if (!s3_timer_.isZero() &&
              ((ros::Time::now() - s3_timer_).toSec() > safe_time_))
     {
-      current_state_ = states::S4_RESETTING;
+      reset();
+      ROS_WARN("Starting again");
     }
     break;
   case states::S4_RESETTING:
@@ -138,26 +139,26 @@ void MetalScanner::setVelocity()
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
-    ROS_DEBUG("   S0 - Setting up!");
+    ROS_INFO("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
   case states::S1_ALIGNING: // P controller is implemented here
-    ROS_DEBUG("   S1 - Aligning!");
+    ROS_INFO("   S1 - Aligning!");
     error_ = coils_.getLeftValue() - coils_.getRightValue();
     wz = error_ * Kp_;
     setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
     break;
   case states::S2_SCANNING:
-    ROS_DEBUG("   S2 - Scanning foward!");
+    ROS_INFO("   S2 - Scanning foward!");
     setVelocity(vx_, 0);
     break;
   case states::S3_MOVING_AWAY:
-    ROS_DEBUG("   S3 - Moving away!");
+    ROS_INFO("   S3 - Moving away!");
     setMovingAway(true);
     setVelocity(-vx_, 0);
     break;
   case states::S4_RESETTING:
-    ROS_DEBUG("   S5 - Resetting!");
+    ROS_INFO("   S5 - Resetting!");
     break;
   }
 }
@@ -181,6 +182,7 @@ void MetalScanner::setVelocity(double vx, double wz)
  */
 void MetalScanner::setMovingAway(bool moving_away)
 {
+  moving_away_ = moving_away;
   std_msgs::Bool msg;
   msg.data = moving_away;
   moving_away_pub_.publish(msg);
@@ -196,7 +198,7 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
   {
     scanning_ = msg->data;
     ROS_INFO("   scanning: %s", scanning_ ? "true" : "false");
-    if (!scanning_)
+    if (!scanning_ && !moving_away_)
     {
       reset();
     }

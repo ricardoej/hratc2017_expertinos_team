@@ -79,6 +79,7 @@ private:
   double spin_time_;
   double sample_time_;
   bool scanning_;
+  bool moving_away_;
   float derivative_;
   virtual void controlLoop();
   void setNextState();
