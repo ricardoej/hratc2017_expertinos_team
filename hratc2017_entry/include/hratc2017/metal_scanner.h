@@ -22,15 +22,14 @@
 
 #define LINEAR_VELOCITY_X 0.1
 #define ANGULAR_VELOCITY_Z 0.3
-#define KP 1.0
+#define LINEAR_KP 1.0
+#define ANGULAR_KP 1.0
+#define LINEAR_TOLERANCE 0.05
+#define ANGULAR_TOLERANCE 0.01
 #define MIN_COIL_SIGNAL 0.6
 #define MAX_COIL_SIGNAL 0.8
-#define COIL_SIGNAL_INCREMENT 0.1
-#define COIL_SIGNAL_TOLERANCE 0.01
-#define SAFE_COIL_SIGNAL 0.35
 #define THRESHOLD 0.5
 #define SAFE_TIME 2.0
-#define SPIN_TIME 4.0
 #define NUMBER_OF_NEGATIVE_SAMPLES 3
 #define SAMPLE_TIME 0.1
 
@@ -43,8 +42,7 @@ enum StateEnum
   S0_SETTING_UP,
   S1_ALIGNING,
   S2_SCANNING,
-  S3_MOVING_AWAY,
-  S4_RESETTING
+  S3_MOVING_AWAY
 };
 }
 
@@ -67,16 +65,16 @@ private:
   Coils coils_;
   double vx_;
   double wz_;
-  double Kp_;
-  double error_;
+  double linear_Kp_;
+  double angular_Kp_;
+  double linear_error_;
+  double angular_error_;
+  double linear_reference_;
+  double linear_tolerance_;
+  double angular_tolerance_;
   double min_coil_signal_;
   double max_coil_signal_;
-  double coil_signal_increment_;
-  double ref_coil_signal_;
-  double coil_signal_tolerance_;
-  double safe_coil_signal_;
   double safe_time_;
-  double spin_time_;
   double sample_time_;
   bool scanning_;
   bool moving_away_;

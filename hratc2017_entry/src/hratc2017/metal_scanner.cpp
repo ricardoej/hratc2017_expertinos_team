@@ -21,7 +21,7 @@ namespace hratc2017
  * @param nh
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), error_(0),
+    : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), angular_error_(0),
       s3_timer_(0), scanning_(false), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
@@ -30,26 +30,24 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Linear velocity x: %f", vx_);
   pnh.param("angular_velocity_z", wz_, ANGULAR_VELOCITY_Z);
   ROS_INFO("   Angular velocity z: %f", wz_);
-  pnh.param("Kp", Kp_, KP);
-  ROS_INFO("   Kp: %f", Kp_);
+  pnh.param("linear_Kp", linear_Kp_, LINEAR_KP);
+  ROS_INFO("   Linear Kp: %f", linear_Kp_);
+  pnh.param("angular_Kp", angular_Kp_, ANGULAR_KP);
+  ROS_INFO("   Angular Kp: %f", angular_Kp_);
+  pnh.param("linear_tolerance", linear_tolerance_,
+            LINEAR_TOLERANCE);
+  ROS_INFO("   Linear tolerance: %f", linear_tolerance_);
+  pnh.param("angular_tolerance", angular_tolerance_,
+            ANGULAR_TOLERANCE);
+  ROS_INFO("   Angular tolerance: %f", angular_tolerance_);
   pnh.param("min_coil_signal", min_coil_signal_, MIN_COIL_SIGNAL);
   ROS_INFO("   Minimum coil signal: %f", min_coil_signal_);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Maximum coil signal: %f", max_coil_signal_);
-  pnh.param("coil_signal_increment", coil_signal_increment_,
-            COIL_SIGNAL_INCREMENT);
-  ROS_INFO("   Coil signal increment: %f", coil_signal_increment_);
-  pnh.param("coil_signal_tolerance", coil_signal_tolerance_,
-            COIL_SIGNAL_TOLERANCE);
-  ROS_INFO("   Coil signal tolerance: %f", coil_signal_tolerance_);
-  pnh.param("safe_coil_signal", safe_coil_signal_, SAFE_COIL_SIGNAL);
-  ROS_INFO("   Safe coil signal %f", safe_coil_signal_);
   pnh.param("sample_time", sample_time_, SAMPLE_TIME);
   ROS_INFO("   Sample time: %f", sample_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe_time %f", safe_time_);
-  pnh.param("spin_time", spin_time_, SPIN_TIME);
-  ROS_INFO("   Spin_time %f", spin_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
@@ -77,7 +75,7 @@ void MetalScanner::controlLoop()
 {
   if (!scanning_ && !moving_away_)
   {
-    ROS_DEBUG("   not scanning!!!");
+    ROS_DEBUG("   Not scanning and not moving away!!!");
     return;
   }
   setNextState();
@@ -93,39 +91,32 @@ void MetalScanner::setNextState()
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
-    ref_coil_signal_ = min_coil_signal_ - coil_signal_increment_;
     current_state_ = states::S1_ALIGNING;
     break;
   case states::S1_ALIGNING:
-    if (fabs(error_) <= coil_signal_tolerance_)
+    if (fabs(angular_error_) <= angular_tolerance_)
     {
-      ref_coil_signal_ += coil_signal_increment_;
-      current_state_ = ref_coil_signal_ <= max_coil_signal_
-                           ? states::S2_SCANNING
-                           : states::S3_MOVING_AWAY;
+      current_state_ = states::S2_SCANNING;
+      linear_reference_ = max_coil_signal_;
     }
     break;
   case states::S2_SCANNING:
-    if (coils_.getLeftValue() >= ref_coil_signal_ ||
-        coils_.getRightValue() >= ref_coil_signal_)
+    if (coils_.getLeftValue() >= max_coil_signal_ ||
+        coils_.getRightValue() >= max_coil_signal_)
     {
-      current_state_ = states::S1_ALIGNING;
+      current_state_ = states::S3_MOVING_AWAY;
+      linear_reference_ = min_coil_signal_;
     }
     break;
   case states::S3_MOVING_AWAY:
-    if (coils_.isBothLow())
+    if (!coils_.isBothLow())
     {
       s3_timer_ = ros::Time::now();
     }
-    else if (!s3_timer_.isZero() &&
-             ((ros::Time::now() - s3_timer_).toSec() > safe_time_))
+    else if ((ros::Time::now() - s3_timer_).toSec() > safe_time_)
     {
       reset();
-      ROS_WARN("Starting again");
     }
-    break;
-  case states::S4_RESETTING:
-    reset();
     break;
   }
 }
@@ -135,30 +126,32 @@ void MetalScanner::setNextState()
  */
 void MetalScanner::setVelocity()
 {
-  double wz;
+  // P controller for linear velocity
+  linear_error_ = linear_reference_ - coils_.getMeanValue();
+  double vx(linear_error_ * linear_Kp_);
+  vx *= fabs(vx) > vx_ ? vx_ / fabs(vx) : 1;
+  // P controller for angular velocity
+  angular_error_ = coils_.getLeftValue() - coils_.getRightValue();
+  double wz(angular_error_ * angular_Kp_);
+  wz *= fabs(wz) > wz_ ? wz_ / fabs(wz) : 1;
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
     ROS_INFO("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
-  case states::S1_ALIGNING: // P controller is implemented here
+  case states::S1_ALIGNING:
     ROS_INFO("   S1 - Aligning!");
-    error_ = coils_.getLeftValue() - coils_.getRightValue();
-    wz = error_ * Kp_;
-    setVelocity(0, wz * (fabs(wz) > wz_ ? wz_ / fabs(wz) : 1));
+    setVelocity(0, wz);
     break;
   case states::S2_SCANNING:
     ROS_INFO("   S2 - Scanning foward!");
-    setVelocity(vx_, 0);
+    setVelocity(vx, wz);
     break;
   case states::S3_MOVING_AWAY:
     ROS_INFO("   S3 - Moving away!");
     setMovingAway(true);
-    setVelocity(-vx_, 0);
-    break;
-  case states::S4_RESETTING:
-    ROS_INFO("   S5 - Resetting!");
+    setVelocity(vx, wz);
     break;
   }
 }

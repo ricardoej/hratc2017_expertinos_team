@@ -3,12 +3,11 @@ high_coil_signal_threshold: 0.9
 coil_signal_filter_number_of_observations: 4
 linear_velocity_x: 0.1
 angular_velocity_z: 0.3
-Kp: 1.0
+angular_Kp: 1.5
+linear_Kp: 1.5
+linear_tolerance: 0.05
+angular_tolerance: 0.01
 min_coil_signal: 0.6
-max_coil_signal: 1.0
-coil_signal_increment: 0.2
-coil_signal_tolerance: 0.01
-safe_coil_signal: 0.4
+max_coil_signal: 0.95
 safe_time: 10.0
-spin_time: 4.0
 sample_time: 0.25
