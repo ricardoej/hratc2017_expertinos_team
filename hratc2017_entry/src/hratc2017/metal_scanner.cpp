@@ -132,7 +132,7 @@ void MetalScanner::setNextState()
     }
     break;
   case states::S5_MOVING_AWAY:
-    if ((ros::Time::now() - timer_).toSec() > rotation_time_)
+    if ((ros::Time::now() - timer_).toSec() > moving_away_time_)
     {
       reset();
       ROS_INFO("   S5_MOVING_AWAY  -->  S0_SETTING_UP");
@@ -176,7 +176,7 @@ void MetalScanner::setVelocity()
   case states::S4_CHANGING_DIRECTION:
     ROS_DEBUG("   S4 - Changing direction!");
     setMovingAway(true);
-    setVelocity(0, wz_);
+    setVelocity(0, -wz_);
     break;
   case states::S5_MOVING_AWAY:
     ROS_DEBUG("   S5 - Moving away!");

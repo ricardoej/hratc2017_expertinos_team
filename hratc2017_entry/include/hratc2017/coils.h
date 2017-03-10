@@ -42,6 +42,7 @@ public:
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
   void setNumberOfObservations(int number_of_observations);
+  void setNumberOfDerivatives(int number_of_observations);
   bool isLeftLow() const;
   bool isLeftHigh() const;
   bool isRightLow() const;

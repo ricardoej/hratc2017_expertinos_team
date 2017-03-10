@@ -2,6 +2,7 @@ derivative_sample_time: 0.05
 low_coil_signal_threshold: 0.45
 high_coil_signal_threshold: 0.65
 coil_signal_filter_number_of_observations: 8
+number_of_derivatives: 5
 sampling_end_interval: 3.0
 max_coil_signal: 1.0
 alignment_tolerance: 0.05

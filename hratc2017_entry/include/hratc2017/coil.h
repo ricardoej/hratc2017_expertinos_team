@@ -18,6 +18,7 @@
 #define DEFAULT_LOW_COIL_SIGNAL_THRESHOLD 0.45
 #define DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD 0.65
 #define DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS 6
+#define DEFAULT_NUMBER_OF_DERIVATIVES 5
 
 namespace hratc2017
 {
@@ -39,8 +40,10 @@ public:
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
   void setNumberOfObservations(int number_of_observations);
+  void setNumberOfDerivatives(int number_of_derivatives);
   bool isLow() const;
   bool isHigh() const;
+  void calculateDerivative();
   std::string str() const;
   const char* c_str() const;
   void operator=(float value);
@@ -53,7 +56,9 @@ private:
   float low_threshold_;
   float high_threshold_;
   int number_of_observations_;
+  int number_of_derivatives_;
   std::list<float> samples_;
+  std::list<float> derived_samples_;
 };
 }
 

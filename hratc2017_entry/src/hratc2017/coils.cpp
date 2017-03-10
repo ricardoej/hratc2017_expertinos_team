@@ -146,6 +146,17 @@ void Coils::setNumberOfObservations(int number_of_observations)
 }
 
 /**
+ * @brief Coils::setNumberOfDerivatives sets the number of considered samples
+ * in the derivative vector.
+ * @param number_of_derivatives
+ */
+void Coils::setNumberOfDerivatives(int number_of_derivatives)
+{
+  left_.setNumberOfDerivatives(number_of_derivatives);
+  right_.setNumberOfDerivatives(number_of_derivatives);
+}
+
+/**
  * @brief Coils::isLeftLow verifies if the left coil's current signal is beneath
  * the low threshold.
  * @return
@@ -297,12 +308,17 @@ void Coils::setParameters(const ros::NodeHandle& pnh)
             DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD);
   ROS_INFO("   High coil signal threshold: %f", aux);
   setHighThreshold(aux);
-  int number_of_observations;
-  pnh.param("coil_signal_filter_number_of_observations", number_of_observations,
+  int number;
+  pnh.param("coil_signal_filter_number_of_observations", number,
             DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
   ROS_INFO("   Coil signal filter number of observations: %d",
-           number_of_observations);
-  setNumberOfObservations(number_of_observations);
+           number);
+  setNumberOfObservations(number);
+  pnh.param("number_of_derivatives", number,
+            DEFAULT_NUMBER_OF_DERIVATIVES);
+  ROS_INFO("   Number of derivatives: %d",
+           number);
+  setNumberOfDerivatives(number);
 }
 
 /**

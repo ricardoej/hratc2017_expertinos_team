@@ -111,6 +111,18 @@ void Coil::setNumberOfObservations(int number_of_observations)
 }
 
 /**
+ * @brief Coil::setNumberOfDerivatives
+ * @param number_of_derivatives
+ */
+void Coil::setNumberOfDerivatives(int number_of_derivatives)
+{
+  number_of_derivatives_ =
+      number_of_derivatives > 0
+          ? number_of_derivatives
+          : DEFAULT_NUMBER_OF_DERIVATIVES;
+}
+
+/**
  * @brief Coil::isLowSignal
  * @return
  */
@@ -121,6 +133,11 @@ bool Coil::isLow() const { return value_ <= low_threshold_; }
  * @return
  */
 bool Coil::isHigh() const { return value_ >= high_threshold_; }
+
+void Coil::calculateDerivative()
+{
+
+}
 
 /**
  * @brief Coil::str
@@ -145,6 +162,7 @@ const char* Coil::c_str() const { return str().c_str(); }
  */
 void Coil::operator=(float value)
 {
+  //Signal mean filter
   if (samples_.size() >= number_of_observations_)
   {
     samples_.pop_back();
@@ -160,4 +178,6 @@ void Coil::operator=(float value)
   last_value_ = value_;
   value_ = sum / samples_.size();
 }
+
+
 }
