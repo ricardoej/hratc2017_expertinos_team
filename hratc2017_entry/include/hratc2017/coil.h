@@ -1,7 +1,7 @@
 /**
  *  This header file defines the Coil class.
  *
- *  Version: 1.0.3
+ *  Version: 1.0.4
  *  Created on: 16/01/2017
  *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
@@ -34,6 +34,7 @@ public:
   std::string getFrameId() const;
   float getValue() const;
   float getDerivedValue() const;
+  float getSampleTime() const;
   void setSampleTime(double sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);

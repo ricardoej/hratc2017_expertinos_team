@@ -1,9 +1,9 @@
 /**
  *  This header file defines the Coils class.
  *
- *  Version: 1.0.1
+ *  Version: 1.0.4
  *  Created on: 30/01/2017
- *  Modified on: 20/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -35,6 +35,9 @@ public:
   float getLeftDerivedValue() const;
   float getRightDerivedValue() const;
   float getMeanDerivedValue() const;
+  double getLeftSampleTime() const;
+  double getRightSampleTime() const;
+  double getMeanSampleTime() const;
   void setSampleTime(double sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);

@@ -2,9 +2,9 @@
  *  This header file defines the MetalScanner class, which is based
  *on the ROSNode class. It controls the metal_scanner_node.
  *
- *  Version: 0.0.1
+ *  Version: 1.0.4
  *  Created on: 09/02/2017
- *  Modified on: 13/02/2017
+ *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -32,8 +32,6 @@
 #define SAFE_TIME 2.0
 #define ROTATION_TIME 2.0
 #define MOVING_AWAY_TIME 3.0
-#define NUMBER_OF_NEGATIVE_SAMPLES 3
-#define SAMPLE_TIME 0.1
 
 namespace hratc2017
 {
@@ -60,7 +58,6 @@ public:
 
 private:
   ros::Time timer_;
-  ros::Timer sampler_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher moving_away_pub_;
   ros::Subscriber coils_sub_;
@@ -81,10 +78,8 @@ private:
   double safe_time_;
   double rotation_time_;
   double moving_away_time_;
-  double sample_time_;
   bool scanning_;
   bool moving_away_;
-  float derivative_;
   virtual void controlLoop();
   void setNextState();
   void setVelocity();
@@ -92,7 +87,6 @@ private:
   void setMovingAway(bool moving_away);
   void reset();
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
-  void timerCallback(const ros::TimerEvent& event);
 };
 }
 

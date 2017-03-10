@@ -2,7 +2,7 @@
  *  This source file implements the LandmineAnalyzer class, which is
  *based on the ROSNode helper class. It controls the landmine_analyzer_node.
  *
- *  Version: 1.0.3
+ *  Version: 1.0.4
  *  Created on: 30/01/2017
  *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
@@ -40,6 +40,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
   ROS_INFO("   Max signal radius: %f", max_signal_radius_);
   pnh.param("landmine_radius", landmine_radius_, LANDMINE_RADIUS);
   ROS_INFO("   Landmine radius: %f", landmine_radius_);
+  sampler_ = nh->createTimer(ros::Duration(coils_.getLeftSampleTime()),
+                             &LandmineAnalyzer::derivativeCallback, this);
   set_fake_mine_pub_ = nh->advertise<geometry_msgs::PoseStamped>(
       "/HRATC_FW/set_fake_mine", 10, true);
   set_mine_pub_ =
@@ -58,6 +60,7 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
  */
 LandmineAnalyzer::~LandmineAnalyzer()
 {
+  sampler_.stop();
   set_mine_pub_.shutdown();
   set_fake_mine_pub_.shutdown();
   polygon_pub_.shutdown();
@@ -78,45 +81,12 @@ void LandmineAnalyzer::controlLoop()
     {
       return;
     }
-    double elapsed_time((ros::Time::now() - landmine_.header.stamp).toSec());
-    if (elapsed_time > sampling_end_interval_)
+    if ((ros::Time::now() - landmine_.header.stamp).toSec() >
+        sampling_end_interval_)
     {
-      // Se entrou nesta parte do código, os sensores
-      // foram saturados ao mesmo tempo, portanto
-      // analiza-se o raio do sinal para ver se é uma mina.
-      if (possible_mine_found_)
+      if (analyze())
       {
-        mine_center_.x = (p_max_left_.x + p_max_right_.x) / 2;
-        mine_center_.y = (p_max_left_.y + p_max_right_.y) / 2;
-      }
-      // Caso entre nesta parte do código, os sensores não foram saturados,
-      // ou seja, mesmo que o raio do sinal seja correto, é uma mina falsa
-      // pela baixa intensidade captada.
-      else
-      {
-        float divisor(0.0);
-        // Como não fora setado um centro para o falso positivo,
-        // obtém-se seu valor pela média ponderada pela intensidade do
-        // sinal (colocada na coordenada z do landmine_.polygon.points),
-        // dos pontos encontrados na área de sinal elevado.
-        for (int i(0); i < landmine_.polygon.points.size(); i++)
-        {
-          mine_center_.x +=
-              landmine_.polygon.points[i].x * landmine_.polygon.points[i].z;
-          mine_center_.y +=
-              landmine_.polygon.points[i].y * landmine_.polygon.points[i].z;
-          divisor += landmine_.polygon.points[i].z;
-        }
-        mine_center_.x /= divisor;
-        mine_center_.y /= divisor;
-      }
-      float radius(
-          sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) +
-               pow(landmine_.polygon.points[0].y - mine_center_.y, 2)));
-      if (!possible_mine_found_ || radius < min_signal_radius_ ||
-          radius > max_signal_radius_)
-      {
-        publishFakeLandminePose(mine_center_.x, mine_center_.y, radius);
+        publishFakeLandminePose(mine_center_.x, mine_center_.y, mine_radius_);
       }
       else
       {
@@ -139,6 +109,56 @@ void LandmineAnalyzer::controlLoop()
   sampling_ = true;
   setScanning(true);
   landmine_.header.stamp = ros::Time::now();
+  sample();
+  polygon_pub_.publish(landmine_);
+}
+
+/**
+ * @brief LandmineAnalyzer::analyze
+ * @return
+ */
+bool LandmineAnalyzer::analyze()
+{
+  // Se entrou nesta parte do código, os sensores
+  // foram saturados ao mesmo tempo, portanto
+  // analiza-se o raio do sinal para ver se é uma mina.
+  if (possible_mine_found_)
+  {
+    mine_center_.x = (p_max_left_.x + p_max_right_.x) / 2;
+    mine_center_.y = (p_max_left_.y + p_max_right_.y) / 2;
+  }
+  // Caso entre nesta parte do código, os sensores não foram saturados,
+  // ou seja, mesmo que o raio do sinal seja correto, é uma mina falsa
+  // pela baixa intensidade captada.
+  else
+  {
+    float divisor(0.0);
+    // Como não fora setado um centro para o falso positivo,
+    // obtém-se seu valor pela média ponderada pela intensidade do
+    // sinal (colocada na coordenada z do landmine_.polygon.points),
+    // dos pontos encontrados na área de sinal elevado.
+    for (int i(0); i < landmine_.polygon.points.size(); i++)
+    {
+      mine_center_.x +=
+          landmine_.polygon.points[i].x * landmine_.polygon.points[i].z;
+      mine_center_.y +=
+          landmine_.polygon.points[i].y * landmine_.polygon.points[i].z;
+      divisor += landmine_.polygon.points[i].z;
+    }
+    mine_center_.x /= divisor;
+    mine_center_.y /= divisor;
+  }
+  mine_radius_ = sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) +
+                      pow(landmine_.polygon.points[0].y - mine_center_.y, 2));
+  return !(!possible_mine_found_ || mine_radius_ < min_signal_radius_ ||
+           mine_radius_ > max_signal_radius_);
+}
+
+/**
+ * @brief LandmineAnalyzer::sample
+ */
+void LandmineAnalyzer::sample()
+{
   geometry_msgs::PoseStamped left_coil_pose(coils_.getLeftPose());
   geometry_msgs::PoseStamped right_coil_pose(coils_.getRightPose());
   geometry_msgs::Point32 p;
@@ -201,7 +221,6 @@ void LandmineAnalyzer::controlLoop()
       max_signal_found_in_both_ = true;
     }
   }
-  polygon_pub_.publish(landmine_);
 }
 
 /**
@@ -309,5 +328,21 @@ void LandmineAnalyzer::reset()
   possible_mine_found_ = false;
   max_signal_found_in_both_ = false;
   setScanning(false);
+}
+
+/**
+ * @brief LandmineAnalyzer::derivativeCallback
+ * @param event
+ */
+void LandmineAnalyzer::derivativeCallback(const ros::TimerEvent& event)
+{
+  return;
+  double derivative(coils_.getMeanDerivedValue());
+  if (sampling_ && derivative < 0.0)
+  {
+    analyze();
+    publishFakeLandminePose(mine_center_.x, mine_center_.y, mine_radius_);
+    reset();
+  }
 }
 }

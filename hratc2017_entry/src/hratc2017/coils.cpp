@@ -2,7 +2,7 @@
  *  This source file implements the Coils class. This class encapsulates helpers
  *methods that evaluates metal detector readings.
  *
- *  Version: 1.0.3
+ *  Version: 1.0.4
  *  Created on: 30/01/2017
  *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
@@ -81,6 +81,27 @@ float Coils::getRightDerivedValue() const { return right_.getDerivedValue(); }
 float Coils::getMeanDerivedValue() const
 {
   return (left_.getDerivedValue() + right_.getDerivedValue()) / 2;
+}
+
+/**
+ * @brief Coils::getLeftSampleTime
+ * @return
+ */
+double Coils::getLeftSampleTime() const { return left_.getSampleTime(); }
+
+/**
+ * @brief Coils::getRightSampleTime
+ * @return
+ */
+double Coils::getRightSampleTime() const { return right_.getSampleTime(); }
+
+/**
+ * @brief Coils::getMeanSampleTime
+ * @return
+ */
+double Coils::getMeanSampleTime() const
+{
+  return (left_.getSampleTime() + right_.getSampleTime()) / 2;
 }
 
 /**
@@ -262,7 +283,7 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
 /**
  * @brief Coils::setParameters
  */
-void Coils::setParameters(const ros::NodeHandle &pnh)
+void Coils::setParameters(const ros::NodeHandle& pnh)
 {
   double aux;
   pnh.param("derivative_sample_time", aux, DEFAULT_DERIVATIVE_SAMPLE_TIME);

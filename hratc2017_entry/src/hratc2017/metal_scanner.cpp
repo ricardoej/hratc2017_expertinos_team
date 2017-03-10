@@ -2,7 +2,7 @@
  *  This source file implements the MetalScanner class, which is
  *based on the ROSNode helper class. It controls the metal_scanner_node.
  *
- *  Version: 1.0.3
+ *  Version: 1.0.4
  *  Created on: 09/02/2017
  *  Modified on: 10/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
@@ -44,8 +44,6 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Minimum coil signal: %f", min_coil_signal_);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Maximum coil signal: %f", max_coil_signal_);
-  pnh.param("sample_time", sample_time_, SAMPLE_TIME);
-  ROS_INFO("   Sample time: %f", sample_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe time %f", safe_time_);
   pnh.param("rotation_time", rotation_time_, ROTATION_TIME);
@@ -57,8 +55,6 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
-  sampler_ = nh->createTimer(ros::Duration(sample_time_),
-                             &MetalScanner::timerCallback, this);
 }
 
 /**
@@ -96,20 +92,23 @@ void MetalScanner::setNextState()
   {
   case states::S0_SETTING_UP:
     current_state_ = states::S1_ALIGNING;
+    ROS_INFO("   S0_SETTING_UP  -->  S1_ALIGNING");
     break;
   case states::S1_ALIGNING:
     if (fabs(angular_error_) <= angular_tolerance_)
     {
-      current_state_ = states::S2_SCANNING;
       linear_reference_ = max_coil_signal_;
+      current_state_ = states::S2_SCANNING;
+      ROS_INFO("   S1_ALIGNING  -->  S2_SCANNING");
     }
     break;
   case states::S2_SCANNING:
     if (coils_.getLeftValue() >= max_coil_signal_ ||
         coils_.getRightValue() >= max_coil_signal_)
     {
-      current_state_ = states::S3_MOVING_BACK;
       linear_reference_ = min_coil_signal_;
+      current_state_ = states::S3_MOVING_BACK;
+      ROS_INFO("   S2_SCANNING  -->  S3_MOVING_BACK");
     }
     break;
   case states::S3_MOVING_BACK:
@@ -121,6 +120,7 @@ void MetalScanner::setNextState()
     {
       timer_ = ros::Time::now();
       current_state_ = states::S4_CHANGING_DIRECTION;
+      ROS_INFO("   S3_MOVING_BACK  -->  S4_CHANGING_DIRECTION");
     }
     break;
   case states::S4_CHANGING_DIRECTION:
@@ -128,12 +128,14 @@ void MetalScanner::setNextState()
     {
       timer_ = ros::Time::now();
       current_state_ = states::S5_MOVING_AWAY;
+      ROS_INFO("   S4_CHANGING_DIRECTION  -->  S5_MOVING_AWAY");
     }
     break;
   case states::S5_MOVING_AWAY:
     if ((ros::Time::now() - timer_).toSec() > rotation_time_)
     {
       reset();
+      ROS_INFO("   S5_MOVING_AWAY  -->  S0_SETTING_UP");
     }
     break;
   }
@@ -155,29 +157,29 @@ void MetalScanner::setVelocity()
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
-    ROS_INFO("   S0 - Setting up!");
+    ROS_DEBUG("   S0 - Setting up!");
     setVelocity(0, 0);
     break;
   case states::S1_ALIGNING:
-    ROS_INFO("   S1 - Aligning!");
+    ROS_DEBUG("   S1 - Aligning!");
     setVelocity(0, wz);
     break;
   case states::S2_SCANNING:
-    ROS_INFO("   S2 - Scanning!");
+    ROS_DEBUG("   S2 - Scanning!");
     setVelocity(vx, wz);
     break;
   case states::S3_MOVING_BACK:
-    ROS_INFO("   S3 - Moving back!");
+    ROS_DEBUG("   S3 - Moving back!");
     setMovingAway(true);
     setVelocity(vx, wz);
     break;
   case states::S4_CHANGING_DIRECTION:
-    ROS_INFO("   S4 - Changing direction!");
+    ROS_DEBUG("   S4 - Changing direction!");
     setMovingAway(true);
     setVelocity(0, wz_);
     break;
   case states::S5_MOVING_AWAY:
-    ROS_INFO("   S5 - Moving away!");
+    ROS_DEBUG("   S5 - Moving away!");
     setMovingAway(true);
     setVelocity(vx_, 0);
     break;
@@ -229,19 +231,11 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
 }
 
 /**
- * @brief MetalScanner::timerCallback
- * @param event
- */
-void MetalScanner::timerCallback(const ros::TimerEvent& event)
-{
-  derivative_ = coils_.getMeanDerivedValue();
-}
-
-/**
  * @brief MetalScanner::reset
  */
 void MetalScanner::reset()
 {
+  ROS_INFO("   RESETING");
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
   setMovingAway(false);

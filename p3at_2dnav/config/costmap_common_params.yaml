@@ -25,7 +25,7 @@ map_type: 'costmap'
 
 plugins:
 - {name: static_layer, type: 'costmap_2d::StaticLayer'}
-- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
+#- {name: obstacle_layer, type: 'costmap_2d::ObstacleLayer'}
 #- {name: obstacles_layer, type: 'hratc2017::ObstaclesLayer'}
 - {name: landmines_layer, type: 'hratc2017::LandminesLayer'}
 - {name: inflation_layer, type: 'costmap_2d::InflationLayer'}
