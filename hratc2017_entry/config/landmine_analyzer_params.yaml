@@ -1,11 +1,13 @@
-derivative_sample_time: 0.05
+# coil signal sampling related paremeters
+derivative_sample_time: 0.1
 low_coil_signal_threshold: 0.45
 high_coil_signal_threshold: 0.65
 coil_signal_filter_number_of_observations: 8
-number_of_derivatives: 5
+number_of_derivatives: 6
+
 sampling_end_interval: 3.0
-max_coil_signal: 1.0
-alignment_tolerance: 0.05
-minimal_signal_radius: 0.05
-maximal_signal_radius: 1.0
-landmine_radius: 0.5
+max_coil_signal: 0.975
+max_tolerance: 0.025
+min_radius: 0.05
+max_radius: 1.0
+std_radius: 0.5

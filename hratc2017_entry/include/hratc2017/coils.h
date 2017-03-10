@@ -55,6 +55,7 @@ public:
   bool isBothHigh() const;
   bool isBothNotLow() const;
   bool isBothNotHigh() const;
+  void calculateDerivative();
   metal_detector_msgs::Coil to_msg() const;
   std::string str() const;
   const char* c_str() const;

@@ -53,6 +53,7 @@ private:
   float value_;
   float last_value_;
   float sample_time_;
+  float derived_value_;
   float low_threshold_;
   float high_threshold_;
   int number_of_observations_;

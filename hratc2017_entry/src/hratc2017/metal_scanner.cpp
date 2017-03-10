@@ -235,7 +235,7 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
  */
 void MetalScanner::reset()
 {
-  ROS_INFO("   RESETING");
+  ROS_INFO("   Reseting Metal Scanner!!!");
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
   setMovingAway(false);

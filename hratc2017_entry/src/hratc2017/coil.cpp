@@ -24,8 +24,9 @@ namespace hratc2017
  */
 Coil::Coil(std::string frame_id, float sample_time, float low_threshold,
            float high_threshold, int number_of_observations)
-    : frame_id_(frame_id), sample_time_(sample_time),
-      low_threshold_(low_threshold), high_threshold_(high_threshold),
+    : frame_id_(frame_id), value_(0.0), derived_value_(0.0),
+      sample_time_(sample_time), low_threshold_(low_threshold),
+      high_threshold_(high_threshold),
       number_of_observations_(number_of_observations)
 {
 }
@@ -51,19 +52,13 @@ float Coil::getValue() const { return value_; }
  * @brief Coil::getDerivedValue
  * @return
  */
-float Coil::getDerivedValue() const
-{
-  return (value_ - last_value_) / sample_time_;
-}
+float Coil::getDerivedValue() const { return derived_value_; }
 
 /**
  * @brief Coil::getSampleTime
  * @return
  */
-float Coil::getSampleTime() const
-{
-  return sample_time_;
-}
+float Coil::getSampleTime() const { return sample_time_; }
 
 /**
  * @brief Coil::setSampleTime
@@ -71,7 +66,8 @@ float Coil::getSampleTime() const
  */
 void Coil::setSampleTime(double sample_time)
 {
-  sample_time_ = sample_time <= 0.0 ? DEFAULT_DERIVATIVE_SAMPLE_TIME : sample_time;
+  sample_time_ =
+      sample_time <= 0.0 ? DEFAULT_DERIVATIVE_SAMPLE_TIME : sample_time;
 }
 
 /**
@@ -116,10 +112,9 @@ void Coil::setNumberOfObservations(int number_of_observations)
  */
 void Coil::setNumberOfDerivatives(int number_of_derivatives)
 {
-  number_of_derivatives_ =
-      number_of_derivatives > 0
-          ? number_of_derivatives
-          : DEFAULT_NUMBER_OF_DERIVATIVES;
+  number_of_derivatives_ = number_of_derivatives > 0
+                               ? number_of_derivatives
+                               : DEFAULT_NUMBER_OF_DERIVATIVES;
 }
 
 /**
@@ -134,9 +129,25 @@ bool Coil::isLow() const { return value_ <= low_threshold_; }
  */
 bool Coil::isHigh() const { return value_ >= high_threshold_; }
 
+/**
+ * @brief Coil::calculateDerivative
+ */
 void Coil::calculateDerivative()
 {
-
+  float derived_value((value_ - last_value_) / sample_time_);
+  if (derived_samples_.size() >= number_of_derivatives_)
+  {
+    derived_samples_.pop_back();
+  }
+  float sum(derived_value);
+  std::list<float>::iterator it(derived_samples_.begin());
+  while (it != derived_samples_.end())
+  {
+    sum += *it;
+    it++;
+  }
+  derived_samples_.push_front(derived_value);
+  derived_value_ = sum / derived_samples_.size();
 }
 
 /**
@@ -162,7 +173,7 @@ const char* Coil::c_str() const { return str().c_str(); }
  */
 void Coil::operator=(float value)
 {
-  //Signal mean filter
+  // Signal mean filter
   if (samples_.size() >= number_of_observations_)
   {
     samples_.pop_back();
@@ -178,6 +189,4 @@ void Coil::operator=(float value)
   last_value_ = value_;
   value_ = sum / samples_.size();
 }
-
-
 }

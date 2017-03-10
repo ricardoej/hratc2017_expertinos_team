@@ -22,10 +22,10 @@
 
 #define SAMPLING_END_INTERVAL 2.0
 #define MAX_COIL_SIGNAL 0.9
-#define ALIGNMENT_TOLERANCE 0.05
-#define MIN_SIGNAL_RADIUS 0.15
-#define MAX_SIGNAL_RADIUS 0.55
-#define LANDMINE_RADIUS 0.45
+#define MAX_TOLERANCE 0.05
+#define MIN_RADIUS 0.15
+#define MAX_RADIUS 0.55
+#define STD_RADIUS 0.45
 
 namespace hratc2017
 {
@@ -44,18 +44,20 @@ private:
   ros::Publisher polygon_pub_;
   ros::Publisher filtered_coils_pub_;
   ros::Subscriber coils_sub_;
+  ros::Subscriber moving_away_sub_;
   Coils coils_;
   std::vector<geometry_msgs::Point> known_landmines_;
   bool max_signal_found_in_both_;
   bool paused_;
   bool possible_mine_found_;
   bool sampling_;
+  bool moving_away_;
   double sampling_end_interval_;
   double max_coil_signal_;
-  double alignment_tolerance_;
-  double min_signal_radius_;
-  double max_signal_radius_;
-  double landmine_radius_;
+  double max_tolerance_;
+  double min_radius_;
+  double max_radius_;
+  double std_radius_;
   double mine_radius_;
   geometry_msgs::Point32 mine_center_;
   geometry_msgs::Point32 p_max_left_;
@@ -71,6 +73,7 @@ private:
   void setScanning(bool scanning);
   void reset();
   void derivativeCallback(const ros::TimerEvent& event);
+  void movingAwayCallback(const std_msgs::Bool::ConstPtr& msg);
 };
 }
 

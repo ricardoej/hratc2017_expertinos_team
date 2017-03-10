@@ -244,6 +244,15 @@ bool Coils::isBothNotHigh() const
 }
 
 /**
+ * @brief Coils::calculateDerivative
+ */
+void Coils::calculateDerivative()
+{
+  left_.calculateDerivative();
+  right_.calculateDerivative();
+}
+
+/**
  * @brief Coils::to_msg
  * @return
  */

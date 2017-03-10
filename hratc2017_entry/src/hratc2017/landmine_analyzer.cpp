@@ -23,35 +23,37 @@ namespace hratc2017
  * @param nh
  */
 LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener())
+    : ROSNode(nh, 30), coils_(new tf::TransformListener()), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Max coil signal: %lf", max_coil_signal_);
-  pnh.param("alignment_tolerance", alignment_tolerance_, ALIGNMENT_TOLERANCE);
-  ROS_INFO("   Max coil signal: %lf", alignment_tolerance_);
+  pnh.param("max_tolerance", max_tolerance_, MAX_TOLERANCE);
+  ROS_INFO("   Max tolerance: %lf", max_tolerance_);
   pnh.param("sampling_end_interval", sampling_end_interval_,
             SAMPLING_END_INTERVAL);
-  ROS_INFO("   Sampling end interval: %f [s]", sampling_end_interval_);
-  pnh.param("minimal_signal_radius", min_signal_radius_, MIN_SIGNAL_RADIUS);
-  ROS_INFO("   Minimal signal radius: %f", min_signal_radius_);
-  pnh.param("maximal_signal_radius", max_signal_radius_, MAX_SIGNAL_RADIUS);
-  ROS_INFO("   Max signal radius: %f", max_signal_radius_);
-  pnh.param("landmine_radius", landmine_radius_, LANDMINE_RADIUS);
-  ROS_INFO("   Landmine radius: %f", landmine_radius_);
+  ROS_INFO("   Sampling end interval: %f", sampling_end_interval_);
+  pnh.param("min_radius", min_radius_, MIN_RADIUS);
+  ROS_INFO("   Min valid radius: %f", min_radius_);
+  pnh.param("max_radius", max_radius_, MAX_RADIUS);
+  ROS_INFO("   Max valid radius: %f", max_radius_);
+  pnh.param("std_radius", std_radius_, STD_RADIUS);
+  ROS_INFO("   Standard radius: %f", std_radius_);
   sampler_ = nh->createTimer(ros::Duration(coils_.getLeftSampleTime()),
                              &LandmineAnalyzer::derivativeCallback, this);
-  set_fake_mine_pub_ = nh->advertise<geometry_msgs::PoseStamped>(
-      "/HRATC_FW/set_fake_mine", 10, true);
   set_mine_pub_ =
       nh->advertise<geometry_msgs::PoseStamped>("/HRATC_FW/set_mine", 10, true);
+  set_fake_mine_pub_ = nh->advertise<geometry_msgs::PoseStamped>(
+      "/HRATC_FW/set_fake_mine", 10, true);
   polygon_pub_ =
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 1);
   scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
       nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
   coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
+  moving_away_sub_ = nh->subscribe("moving_away", 1,
+                                   &LandmineAnalyzer::movingAwayCallback, this);
   reset();
 }
 
@@ -65,8 +67,9 @@ LandmineAnalyzer::~LandmineAnalyzer()
   set_fake_mine_pub_.shutdown();
   polygon_pub_.shutdown();
   scanning_pub_.shutdown();
-  coils_sub_.shutdown();
   filtered_coils_pub_.shutdown();
+  coils_sub_.shutdown();
+  moving_away_sub_.shutdown();
 }
 
 /**
@@ -77,12 +80,9 @@ void LandmineAnalyzer::controlLoop()
   publishFilteredCoilSignals();
   if (coils_.isBothNotHigh())
   {
-    if (!sampling_)
-    {
-      return;
-    }
-    if ((ros::Time::now() - landmine_.header.stamp).toSec() >
-        sampling_end_interval_)
+    if (sampling_ &&
+        (ros::Time::now() - landmine_.header.stamp).toSec() >
+            sampling_end_interval_)
     {
       if (analyze())
       {
@@ -104,13 +104,14 @@ void LandmineAnalyzer::controlLoop()
     }
     return;
   }
-  //é necessário ficar publicando para twist_mux travar o navigation
-  // constantemente
-  sampling_ = true;
-  setScanning(true);
-  landmine_.header.stamp = ros::Time::now();
-  sample();
-  polygon_pub_.publish(landmine_);
+  if (!moving_away_)
+  {
+    sampling_ = true;
+    setScanning(true);
+    landmine_.header.stamp = ros::Time::now();
+    sample();
+    polygon_pub_.publish(landmine_);
+  }
 }
 
 /**
@@ -150,8 +151,9 @@ bool LandmineAnalyzer::analyze()
   }
   mine_radius_ = sqrt(pow(landmine_.polygon.points[0].x - mine_center_.x, 2) +
                       pow(landmine_.polygon.points[0].y - mine_center_.y, 2));
-  return !(!possible_mine_found_ || mine_radius_ < min_signal_radius_ ||
-           mine_radius_ > max_signal_radius_);
+  ROS_ERROR("found radius: %lf", mine_radius_);
+  return possible_mine_found_ && mine_radius_ >= min_radius_ &&
+         mine_radius_ <= max_radius_;
 }
 
 /**
@@ -181,9 +183,9 @@ void LandmineAnalyzer::sample()
     landmine_.polygon.points.push_back(p);
   }
   bool left_ok(fabs(max_coil_signal_ - coils_.getLeftValue()) <=
-               alignment_tolerance_);
+               max_tolerance_);
   bool right_ok(fabs(max_coil_signal_ - coils_.getRightValue()) <=
-                alignment_tolerance_);
+                max_tolerance_);
   if (left_ok || right_ok)
   {
     possible_mine_found_ = true;
@@ -260,9 +262,8 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
   msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
   known_landmines_.push_back(msg.pose.position);
   set_fake_mine_pub_.publish(msg);
-  ROS_INFO(
-      "   Fake mine found @ (%lf, %lf) with radius %lf [m] and area %f [m2]!!!",
-      x, y, radius, M_PI * pow(radius, 2));
+  ROS_INFO("   Fake mine found @ (%lf, %lf) with radius %lf [m]!!!", x, y,
+           radius);
 }
 
 /**
@@ -297,9 +298,9 @@ bool LandmineAnalyzer::isKnownLandmine() const
   {
     delta_x = coil_pose.pose.position.x - known_landmines_[i].x;
     delta_y = coil_pose.pose.position.y - known_landmines_[i].y;
-    if (pow(delta_x, 2) + pow(delta_y, 2) <= pow(landmine_radius_, 2))
+    if (pow(delta_x, 2) + pow(delta_y, 2) <= pow(std_radius_, 2))
     {
-      ROS_INFO("already known landmine");
+      ROS_INFO("Already known landmine.");
       return true;
     }
   }
@@ -322,6 +323,7 @@ void LandmineAnalyzer::setScanning(bool scanning)
  */
 void LandmineAnalyzer::reset()
 {
+  ROS_INFO("   Reseting Landmine Analyzer!!!");
   landmine_ = geometry_msgs::PolygonStamped();
   landmine_.header.frame_id = "minefield";
   sampling_ = false;
@@ -336,13 +338,28 @@ void LandmineAnalyzer::reset()
  */
 void LandmineAnalyzer::derivativeCallback(const ros::TimerEvent& event)
 {
-  return;
+  coils_.calculateDerivative();
   double derivative(coils_.getMeanDerivedValue());
-  if (sampling_ && derivative < 0.0)
+  //ROS_INFO("derived value: %lf", derivative);
+  if (sampling_ && !moving_away_ && derivative < 0.0)
   {
-    analyze();
+    ROS_WARN("Negative derived value!!");
+    /*analyze();
     publishFakeLandminePose(mine_center_.x, mine_center_.y, mine_radius_);
-    reset();
+    reset();*/
+  }
+}
+
+/**
+ * @brief LandmineAnalyzer::movingAwayCallback
+ * @param msg
+ */
+void LandmineAnalyzer::movingAwayCallback(const std_msgs::Bool::ConstPtr& msg)
+{
+  if (moving_away_ != msg->data)
+  {
+    moving_away_ = msg->data;
+    ROS_INFO("   moving away: %s", moving_away_ ? "true" : "false");
   }
 }
 }
