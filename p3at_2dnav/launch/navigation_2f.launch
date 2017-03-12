@@ -1,0 +1,7 @@
+<launch>
+  <arg name="rviz" default="true"/>
+  
+  <include file="$(find p3at_2dnav)/launch/amcl.launch"/>
+  <include file="$(find p3at_2dnav)/launch/move_base_2f.launch"/>
+  <node name="rviz_navigation" pkg="rviz" respawn="false" type="rviz" args="-d $(find p3at_2dnav)/config/navigation.rviz" if="$(arg rviz)"/>
+</launch>
