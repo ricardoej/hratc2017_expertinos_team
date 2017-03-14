@@ -52,7 +52,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Moving away time %f", moving_away_time_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
-  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
+  coils_sub_ = nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
 }

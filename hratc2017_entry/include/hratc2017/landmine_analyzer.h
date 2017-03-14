@@ -37,6 +37,9 @@ public:
   virtual ~LandmineAnalyzer();
 
 private:
+  ros::Time temporario_;
+
+
   ros::Timer sampler_;
   ros::Publisher scanning_pub_;
   ros::Publisher set_mine_pub_;

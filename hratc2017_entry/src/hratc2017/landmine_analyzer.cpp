@@ -50,10 +50,16 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
       nh->advertise<geometry_msgs::PolygonStamped>("landmine/polygon", 1);
   scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
-      nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
-  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
+      nh->advertise<metal_detector_msgs::Coil>("/metal_detector/filtered", 10);
+  coils_sub_ = nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
                                    &LandmineAnalyzer::movingAwayCallback, this);
+
+  /*************/
+  temporario_ = ros::Time::now();
+  /***********/
+
+
   reset();
 }
 
@@ -77,6 +83,15 @@ LandmineAnalyzer::~LandmineAnalyzer()
  */
 void LandmineAnalyzer::controlLoop()
 {
+
+
+  /********/
+  if ((ros::Time::now() - temporario_).toSec() <= 5 * 60)
+  {
+    return;
+  }
+  /*******/
+
   publishFilteredCoilSignals();
   if (coils_.isBothNotHigh())
   {

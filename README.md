@@ -25,5 +25,11 @@ roslaunch hratc2017_framework run_simulation.launch
 - Run the program using a roslaunch file in a terminal:
 
 ```
+roslaunch hratc2017_entry entry.launch simulation:=true
+```
+
+- Otherwise, run the following command for real robot aplication:
+
+```
 roslaunch hratc2017_entry entry.launch
 ```

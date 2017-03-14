@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="simulation" default="false"/>
   <arg name="plot" default="true"/>
   <node name="landmine_analyzer" pkg="hratc2017_entry" type="landmine_analyzer_node" output="screen">
     <rosparam file="$(find hratc2017_entry)/config/landmine_analyzer_params.yaml" command="load"/>
     <rosparam file="$(find hratc2017_entry)/config/scanning_common_params.yaml" command="load"/>
+    <remap from="/metal_detector" to="/coils" if="$(arg simulation)"/>
   </node>
-  <node name="rqt_coil_signals" pkg="rqt_gui" type="rqt_gui" output="screen" args="--perspective-file $(find hratc2017_entry)/config/coil_signals.perspective -l -f" if="$(arg plot)"/>
+  <node name="rqt_coil_signals" pkg="rqt_gui" type="rqt_gui" output="screen" args="--perspective-file $(find hratc2017_entry)/config/coil_signals.perspective -l -f" if="$(arg simulation)"/>
 </launch>

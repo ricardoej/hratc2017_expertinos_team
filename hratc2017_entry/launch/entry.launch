@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="simulation" default="false"/>
   <arg name="plot" default="true"/>
   <arg name="robot" default="p3at"/>
   <arg name="rviz" default="true"/>
@@ -8,14 +9,18 @@
       <arg name ="plot" value="$(arg plot)"/>
     </include>
     <include file="$(find hratc2017_entry)/launch/metal_scanner.launch"/>
-    <!--<include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>-->
+    <include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>
     <node name="twist_mux" pkg="twist_mux" type="twist_mux" output="screen">
       <rosparam file="$(find hratc2017_entry)/config/twist_mux_params.yaml" command="load"/>
-      <remap from="cmd_vel_out" to="cmd_vel"/>
+      <remap from="cmd_vel_out" to="/RosAria/cmd_vel" unless="$(arg simulation)"/>
+      <remap from="cmd_vel_out" to="cmd_vel" if="$(arg simulation)"/>
     </node>
     <node name="convert_odom" pkg="convert_odom" type="convert_odom"/>
   </group>
-  <include file="$(find p3at_2dnav)/launch/navigation.launch">
+  <include file="$(find p3at_2dnav)/launch/navigation_2f.launch" unless="$(arg simulation)">
+    <arg name ="rviz" value="$(arg rviz)"/>
+  </include>
+  <include file="$(find p3at_2dnav)/launch/navigation.launch" if="$(arg simulation)">
     <arg name ="rviz" value="$(arg rviz)"/>
   </include>
 </launch>

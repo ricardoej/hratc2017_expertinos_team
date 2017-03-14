@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="simulation" default="false"/>
   <node name="metal_scanner" pkg="hratc2017_entry" type="metal_scanner_node" output="screen">
     <rosparam file="$(find hratc2017_entry)/config/metal_scanner_params.yaml" command="load"/>
     <rosparam file="$(find hratc2017_entry)/config/scanning_common_params.yaml" command="load"/>
     <remap from="cmd_vel" to="metal_scanner/cmd_vel"/>
+    <remap from="/metal_detector" to="/coils" if="$(arg simulation)"/>
+    <remap from="/metal_detector/filtered" to="/coils/filtered" if="$(arg simulation)"/>
   </node>
 </launch>
