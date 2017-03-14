@@ -7,6 +7,7 @@ The Anti-Personnel Mine Ban Convention is one of the world's most widely accepte
 ```
 sudo apt-get install ros-indigo-twist-mux
 sudo apt-get install ros-indigo-navigation
+sudo apt-get install ros-indigo-hector-slam
 ```
 
 - Unzip the source code in `[your_catkin_workspace]/src`
