@@ -23,4 +23,7 @@
   <include file="$(find p3at_2dnav)/launch/navigation.launch" if="$(arg simulation)">
     <arg name ="rviz" value="$(arg rviz)"/>
   </include>
+
+  <node pkg="rosbag" type="record" name="rosbag_expertinos" args="-o $(find hratc2017_entry)/expertinos_bag -a" />
+
 </launch>
