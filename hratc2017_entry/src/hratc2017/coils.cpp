@@ -320,13 +320,10 @@ void Coils::setParameters(const ros::NodeHandle& pnh)
   int number;
   pnh.param("coil_signal_filter_number_of_observations", number,
             DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
-  ROS_INFO("   Coil signal filter number of observations: %d",
-           number);
+  ROS_INFO("   Coil signal filter number of observations: %d", number);
   setNumberOfObservations(number);
-  pnh.param("number_of_derivatives", number,
-            DEFAULT_NUMBER_OF_DERIVATIVES);
-  ROS_INFO("   Number of derivatives: %d",
-           number);
+  pnh.param("number_of_derivatives", number, DEFAULT_NUMBER_OF_DERIVATIVES);
+  ROS_INFO("   Number of derivatives: %d", number);
   setNumberOfDerivatives(number);
 }
 
@@ -360,6 +357,21 @@ geometry_msgs::PoseStamped Coils::getRightPose() const
 }
 
 /**
+ * @brief Coils::getMeanPose
+ * @return
+ */
+geometry_msgs::PoseStamped Coils::getMidstPose() const
+{
+  geometry_msgs::PoseStamped midst_pose(getPose(left_.getFrameId()));
+  geometry_msgs::PoseStamped right_pose(getPose(right_.getFrameId()));
+  midst_pose.pose.position.x += right_pose.pose.position.x;
+  midst_pose.pose.position.x /= 2;
+  midst_pose.pose.position.y += right_pose.pose.position.y;
+  midst_pose.pose.position.y /= 2;
+  return midst_pose;
+}
+
+/**
  * @brief Coils::getPose
  * @param coil
  * @return
@@ -376,7 +388,7 @@ geometry_msgs::PoseStamped Coils::getPose(std::string frame_id) const
   try
   {
     tf_->waitForTransform(MINEFIELD_FRAME_ID, frame_id, now,
-                          ros::Duration(2.0));
+                          ros::Duration(0.5));
     tf_->lookupTransform(MINEFIELD_FRAME_ID, frame_id, now, transform);
   }
   catch (tf::TransformException& ex)

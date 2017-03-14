@@ -2,9 +2,9 @@
  *  This header file defines the MetalScanner class, which is based
  *on the ROSNode class. It controls the metal_scanner_node.
  *
- *  Version: 1.0.4
+ *  Version: 1.1.1
  *  Created on: 09/02/2017
- *  Modified on: 10/03/2017
+ *  Modified on: 13/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -29,6 +29,7 @@
 #define MIN_COIL_SIGNAL 0.6
 #define MAX_COIL_SIGNAL 0.8
 #define THRESHOLD 0.5
+#define PAUSE_TIME 0.5
 #define SAFE_TIME 2.0
 #define ROTATION_TIME 2.0
 #define MOVING_AWAY_TIME 3.0
@@ -42,9 +43,10 @@ enum StateEnum
   S0_SETTING_UP,
   S1_ALIGNING,
   S2_SCANNING,
-  S3_MOVING_BACK,
-  S4_CHANGING_DIRECTION,
-  S5_MOVING_AWAY
+  S3_HOLDING_ON,
+  S4_MOVING_BACK,
+  S5_CHANGING_DIRECTION,
+  S6_MOVING_AWAY
 };
 }
 
@@ -75,6 +77,7 @@ private:
   double angular_tolerance_;
   double min_coil_signal_;
   double max_coil_signal_;
+  double pause_time_;
   double safe_time_;
   double rotation_time_;
   double moving_away_time_;
