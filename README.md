@@ -29,8 +29,9 @@ roslaunch hratc2017_framework run_simulation.launch
 roslaunch hratc2017_entry entry.launch simulation:=true
 ```
 
-- Otherwise, run the following command for real robot aplication:
+- Otherwise, run the following commands for real robot aplication:
 
 ```
+roslaunch hratc2017_robot trouble.launch
 roslaunch hratc2017_entry entry.launch
 ```
