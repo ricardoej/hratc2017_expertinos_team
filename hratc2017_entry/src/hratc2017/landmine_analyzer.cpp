@@ -81,14 +81,6 @@ void LandmineAnalyzer::controlLoop()
     }
     return;
   }
-  /*if (isKnownLandmine())
-  {
-    if (sampling_)
-    {
-      reset();
-    }
-    return;
-  }*/
   if (!moving_away_)
   {
     sample();
@@ -100,35 +92,26 @@ void LandmineAnalyzer::controlLoop()
  */
 void LandmineAnalyzer::sample()
 {
-  ROS_INFO("SAMPLING: %lf", coils_.getMeanValue());
   setScanning(true);
   end_time_ = ros::Time::now();
   geometry_msgs::PoseStamped midst_pose(coils_.getMidstPose());
   if (!collected_center_)
   {
     mine_center_ = midst_pose.pose.position;
-    ROS_ERROR("Setting mine center point @ (%lf, %lf)!!!", mine_center_.x,
-             mine_center_.y); ///////////////////////////////////////////
     if (!sampling_)
     {
       sampling_ = true;
       mine_bound_ = midst_pose.pose.position;
-      ROS_WARN("Setting mine bound point @ (%lf, %lf)!!!", mine_bound_.x,
-               mine_bound_.y); ///////////////////////////////////////////
     }
   }
   else if (coils_.isBothNotLow())
   {
     mine_bound_ = midst_pose.pose.position;
-    ROS_ERROR(
-        "Collected mine bound point @ (%lf, %lf)!!!", mine_bound_.x,
-        mine_bound_.y); ///////////////////////////////////////////////////////
   }
   if (coils_.isAnyHigh())
   {
     collected_center_ = true;
   }
-  ROS_WARN("Current radius: %lf", calculateRadius());
 }
 
 /**
@@ -137,7 +120,6 @@ void LandmineAnalyzer::sample()
 void LandmineAnalyzer::publish()
 {
   double radius(calculateRadius());
-  ROS_ERROR("Final radius: %lf", radius); /////////////////////
   if (radius >= min_radius_ && radius <= max_radius_)
   {
     publishLandminePose();
@@ -170,7 +152,6 @@ void LandmineAnalyzer::publishLandminePose(double x, double y)
   msg.pose.position.y = y;
   msg.pose.position.z = 0.0;
   msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-  known_landmines_.push_back(msg.pose.position);
   set_mine_pub_.publish(msg);
   ROS_INFO("   Real mine found @ (%lf, %lf)!!!", x, y);
 }
@@ -199,7 +180,6 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
   msg.pose.position.y = y;
   msg.pose.position.z = radius;
   msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-  known_landmines_.push_back(msg.pose.position);
   set_fake_mine_pub_.publish(msg);
   ROS_INFO("   Fake mine found @ (%lf, %lf) with radius %lf [m]!!!", x, y,
            radius);
@@ -211,30 +191,6 @@ void LandmineAnalyzer::publishFakeLandminePose(double x, double y,
 void LandmineAnalyzer::publishFilteredCoilSignals() const
 {
   filtered_coils_pub_.publish(coils_.to_msg());
-}
-
-/**
- * @brief LandmineAnalyzer::isKnownLandmine
- * @return
- */
-bool LandmineAnalyzer::isKnownLandmine() const
-{
-  if (known_landmines_.empty())
-  {
-    return false;
-  }
-  geometry_msgs::PoseStamped coil_pose(
-      coils_.isLeftHigh() ? coils_.getLeftPose() : coils_.getRightPose());
-  for (int i(0); i < known_landmines_.size(); i++)
-  {
-    if (calculateDistance(coil_pose.pose.position, known_landmines_[i]) <=
-        std_radius_)
-    {
-      ROS_INFO("Already known landmine.");
-      return true;
-    }
-  }
-  return false;
 }
 
 /**

@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.3
  *  Created on: 01/02/2017
- *  Modified on: 08/02/2017
+ *  Modified on: 17/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -18,6 +18,7 @@
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
+#include "utilities/points.h"
 
 namespace hratc2017
 {
@@ -37,12 +38,13 @@ private:
   void reconfigureCallback(costmap_2d::GenericPluginConfig& config,
                            uint32_t level);
   void landminesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
-
+  bool isKnownLandmine(geometry_msgs::Point p) const;
   ros::Subscriber landmines_sub_;
   std::vector<geometry_msgs::Point> landmines_;
   double min_x_, min_y_, max_x_, max_y_;
   int num_parts_;
   double radius_;
+  double max_radius_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>* dsrv_;
 };
 }

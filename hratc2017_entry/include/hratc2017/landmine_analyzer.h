@@ -44,7 +44,6 @@ private:
   ros::Subscriber coils_sub_;
   ros::Subscriber moving_away_sub_;
   Coils coils_;
-  std::vector<geometry_msgs::Point> known_landmines_;
   bool sampling_;
   bool moving_away_;
   bool collected_center_;

@@ -18,6 +18,7 @@
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/Twist.h>
 #include "hratc2017/coils.h"
+#include "utilities/points.h"
 #include "utilities/ros_node.h"
 
 #define LINEAR_VELOCITY_X 0.1
@@ -33,6 +34,7 @@
 #define SAFE_TIME 2.0
 #define ROTATION_TIME 2.0
 #define MOVING_AWAY_TIME 3.0
+#define STANDARD_RADIUS 0.5
 
 namespace hratc2017
 {
@@ -64,6 +66,8 @@ private:
   ros::Publisher moving_away_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber scanning_sub_;
+  ros::Subscriber mines_sub_;
+  ros::Subscriber fake_mines_sub_;
   StateEnum current_state_;
   Coils coils_;
   double vx_;
@@ -81,15 +85,26 @@ private:
   double safe_time_;
   double rotation_time_;
   double moving_away_time_;
+  double std_radius_;
   bool scanning_;
   bool moving_away_;
+  std::vector<geometry_msgs::Point> mines_;
+  std::vector<geometry_msgs::Point> fake_mines_;
   virtual void controlLoop();
   void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);
   void setMovingAway(bool moving_away);
-  void reset();
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
+  void minesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+  void fakeMinesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+  void reset();
+  bool isKnownMine() const;
+  bool isKnownMine(geometry_msgs::Point p) const;
+  bool isKnownMine(double x, double y) const;
+  bool isKnownFakeMine() const;
+  bool isKnownFakeMine(geometry_msgs::Point p) const;
+  bool isKnownFakeMine(double x, double y) const;
 };
 }
 

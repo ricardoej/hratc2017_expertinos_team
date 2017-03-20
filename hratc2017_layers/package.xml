@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>hratc2017_layers</name>
-  <version>0.0.2</version>
+  <version>1.1.0</version>
   <description>The hratc2017_layers package.</description>
 
   <maintainer email="adrianohrl@todo.todo">adrianohrl</maintainer>
@@ -14,9 +14,11 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>costmap_2d</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>hratc2017_entry</build_depend>
   <build_depend>roscpp</build_depend>
   <run_depend>costmap_2d</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>hratc2017_entry</run_depend>
   <run_depend>roscpp</run_depend>
 
   <export>
