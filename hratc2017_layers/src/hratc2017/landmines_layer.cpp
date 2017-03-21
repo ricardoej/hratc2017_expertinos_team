@@ -2,9 +2,9 @@
  *  This source file implements the LandminesLayer class, which is based
  *on the costmap_2d::Layer class.
  *
- *  Version: 0.0.3
+ *  Version: 1.1.1
  *  Created on: 01/02/2017
- *  Modified on: 15/02/2017
+ *  Modified on: 17/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -14,7 +14,8 @@
 
 PLUGINLIB_EXPORT_CLASS(hratc2017::LandminesLayer, costmap_2d::Layer)
 
-#define DEFAULT_LANDMINE_RADIUS 0.15
+#define DEFAULT_LANDMINE_RADIUS 0.25
+#define DEFAULT_MAX_LANDMINE_RADIUS 0.5
 #define DEFAULT_LANDMINE_NUMBER_OF_PARTS 12
 
 namespace hratc2017
@@ -54,6 +55,8 @@ void LandminesLayer::onInitialize()
   ros::NodeHandle pnh("~/" + name_);
   pnh.param("radius", radius_, DEFAULT_LANDMINE_RADIUS);
   ROS_INFO("    Landmine radius: %lf", radius_);
+  pnh.param("max_radius", max_radius_, DEFAULT_MAX_LANDMINE_RADIUS);
+  ROS_INFO("    Landmine max radius: %lf", max_radius_);
   pnh.param("num_parts", num_parts_, DEFAULT_LANDMINE_NUMBER_OF_PARTS);
   ROS_INFO("    Number of parts of landmine circumference: %d", num_parts_);
   std::string source;
@@ -162,6 +165,43 @@ void LandminesLayer::landminesCallback(
   min_y_ = std::min(min_y_, msg->pose.position.y - radius_);
   max_x_ = std::max(max_x_, msg->pose.position.x + radius_);
   max_y_ = std::max(max_y_, msg->pose.position.y + radius_);
-  landmines_.push_back(msg->pose.position);
+  if (!isKnownLandmine(msg->pose.position))
+  {
+    landmines_.push_back(msg->pose.position);
+    return;
+  }
+  ROS_ERROR("[Layer MineCB] Already known mine @ (%lf, %lf)",
+            msg->pose.position.x, msg->pose.position.y);
+  for (int i(0); i < landmines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(landmines_[i],
+                                                msg->pose.position) <= max_radius_)
+    {
+      ROS_ERROR("[Layer MineCB] Old mine position @ (%lf, %lf)",
+                landmines_[i].x, landmines_[i].y);
+      landmines_[i] =
+          utilities::Points::getMidstPoint(landmines_[i], msg->pose.position);
+      ROS_ERROR("[Layer MineCB] New mine position @ (%lf, %lf)",
+                landmines_[i].x, landmines_[i].y);
+      return;
+    }
+  }
+}
+
+/**
+ * @brief LandminesLayer::isKnownLandmine
+ * @param p
+ * @return
+ */
+bool LandminesLayer::isKnownLandmine(geometry_msgs::Point p) const
+{
+  for (int i(0); i < landmines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(landmines_[i], p) <= max_radius_)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 }

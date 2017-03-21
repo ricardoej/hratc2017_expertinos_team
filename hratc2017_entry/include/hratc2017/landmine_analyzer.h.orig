@@ -35,7 +35,13 @@ public:
   virtual ~LandmineAnalyzer();
 
 private:
+<<<<<<< HEAD
+  ros::Time temporario_;
+
+
+=======
   ros::Time end_time_;
+>>>>>>> v1.1/new-analyzer-algorithm
   ros::Timer sampler_;
   ros::Publisher scanning_pub_;
   ros::Publisher set_mine_pub_;

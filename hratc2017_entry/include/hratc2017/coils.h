@@ -65,6 +65,7 @@ public:
   void coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg);
   geometry_msgs::PoseStamped getLeftPose() const;
   geometry_msgs::PoseStamped getRightPose() const;
+  geometry_msgs::PoseStamped getMidstPose() const;
 
 private:
   Coil left_;

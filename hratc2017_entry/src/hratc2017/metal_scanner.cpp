@@ -2,9 +2,9 @@
  *  This source file implements the MetalScanner class, which is
  *based on the ROSNode helper class. It controls the metal_scanner_node.
  *
- *  Version: 1.0.4
+ *  Version: 1.1.1
  *  Created on: 09/02/2017
- *  Modified on: 10/03/2017
+ *  Modified on: 13/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -21,8 +21,9 @@ namespace hratc2017
  * @param nh
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), current_state_(states::S0_SETTING_UP), angular_error_(0),
-      timer_(0), scanning_(false), moving_away_(false)
+    : ROSNode(nh, 30), coils_(new tf::TransformListener()),
+      current_state_(states::S0_SETTING_UP), angular_error_(0), timer_(0),
+      scanning_(false), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -34,27 +35,33 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Linear Kp: %f", linear_Kp_);
   pnh.param("angular_Kp", angular_Kp_, ANGULAR_KP);
   ROS_INFO("   Angular Kp: %f", angular_Kp_);
-  pnh.param("linear_tolerance", linear_tolerance_,
-            LINEAR_TOLERANCE);
+  pnh.param("linear_tolerance", linear_tolerance_, LINEAR_TOLERANCE);
   ROS_INFO("   Linear tolerance: %f", linear_tolerance_);
-  pnh.param("angular_tolerance", angular_tolerance_,
-            ANGULAR_TOLERANCE);
+  pnh.param("angular_tolerance", angular_tolerance_, ANGULAR_TOLERANCE);
   ROS_INFO("   Angular tolerance: %f", angular_tolerance_);
   pnh.param("min_coil_signal", min_coil_signal_, MIN_COIL_SIGNAL);
   ROS_INFO("   Minimum coil signal: %f", min_coil_signal_);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
   ROS_INFO("   Maximum coil signal: %f", max_coil_signal_);
+  pnh.param("pause_time", pause_time_, PAUSE_TIME);
+  ROS_INFO("   Pause time %f", pause_time_);
   pnh.param("safe_time", safe_time_, SAFE_TIME);
   ROS_INFO("   Safe time %f", safe_time_);
   pnh.param("rotation_time", rotation_time_, ROTATION_TIME);
   ROS_INFO("   Rotation time %f", rotation_time_);
   pnh.param("moving_away_time", moving_away_time_, MOVING_AWAY_TIME);
   ROS_INFO("   Moving away time %f", moving_away_time_);
+  pnh.param("std_radius", std_radius_, STANDARD_RADIUS);
+  ROS_INFO("   Standard radius of separation: %f", std_radius_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
   coils_sub_ = nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
+  mines_sub_ = nh->subscribe("/HRATC_FW/set_mine", 10,
+                             &MetalScanner::minesCallback, this);
+  fake_mines_sub_ = nh->subscribe("/HRATC_FW/set_fake_mine", 10,
+                                  &MetalScanner::fakeMinesCallback, this);
 }
 
 /**
@@ -66,6 +73,8 @@ MetalScanner::~MetalScanner()
   moving_away_pub_.shutdown();
   coils_sub_.shutdown();
   scanning_sub_.shutdown();
+  mines_sub_.shutdown();
+  fake_mines_sub_.shutdown();
 }
 
 /**
@@ -103,15 +112,23 @@ void MetalScanner::setNextState()
     }
     break;
   case states::S2_SCANNING:
-    if (coils_.getLeftValue() >= max_coil_signal_ ||
-        coils_.getRightValue() >= max_coil_signal_)
+    if (coils_.isLeftHigh() || coils_.isRightHigh())
     {
       linear_reference_ = min_coil_signal_;
-      current_state_ = states::S3_MOVING_BACK;
-      ROS_INFO("   S2_SCANNING  -->  S3_MOVING_BACK");
+      timer_ = ros::Time::now();
+      current_state_ = states::S3_HOLDING_ON;
+      ROS_INFO("   S2_SCANNING  -->  S3_HOLDING_ON");
     }
     break;
-  case states::S3_MOVING_BACK:
+  case states::S3_HOLDING_ON:
+    if ((ros::Time::now() - timer_).toSec() > pause_time_)
+    {
+      timer_ = ros::Time::now();
+      current_state_ = states::S4_MOVING_BACK;
+      ROS_INFO("   S3_HOLDING_ON  -->  S4_MOVING_BACK");
+    }
+    break;
+  case states::S4_MOVING_BACK:
     if (!coils_.isBothLow())
     {
       timer_ = ros::Time::now();
@@ -119,23 +136,23 @@ void MetalScanner::setNextState()
     else if ((ros::Time::now() - timer_).toSec() > safe_time_)
     {
       timer_ = ros::Time::now();
-      current_state_ = states::S4_CHANGING_DIRECTION;
-      ROS_INFO("   S3_MOVING_BACK  -->  S4_CHANGING_DIRECTION");
+      current_state_ = states::S5_CHANGING_DIRECTION;
+      ROS_INFO("   S4_MOVING_BACK  -->  S5_CHANGING_DIRECTION");
     }
     break;
-  case states::S4_CHANGING_DIRECTION:
+  case states::S5_CHANGING_DIRECTION:
     if ((ros::Time::now() - timer_).toSec() > rotation_time_)
     {
       timer_ = ros::Time::now();
-      current_state_ = states::S5_MOVING_AWAY;
-      ROS_INFO("   S4_CHANGING_DIRECTION  -->  S5_MOVING_AWAY");
+      current_state_ = states::S6_MOVING_AWAY;
+      ROS_INFO("   S5_CHANGING_DIRECTION  -->  S6_MOVING_AWAY");
     }
     break;
-  case states::S5_MOVING_AWAY:
+  case states::S6_MOVING_AWAY:
     if ((ros::Time::now() - timer_).toSec() > moving_away_time_)
     {
       reset();
-      ROS_INFO("   S5_MOVING_AWAY  -->  S0_SETTING_UP");
+      ROS_INFO("   S6_MOVING_AWAY  -->  S0_SETTING_UP");
     }
     break;
   }
@@ -168,18 +185,22 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S2 - Scanning!");
     setVelocity(vx, wz);
     break;
-  case states::S3_MOVING_BACK:
-    ROS_DEBUG("   S3 - Moving back!");
-    setMovingAway(true);
+  case states::S3_HOLDING_ON:
+    ROS_DEBUG("   S3 - Holding on!");
+    setVelocity(0, 0);
+    break;
+  case states::S4_MOVING_BACK:
+    ROS_DEBUG("   S4 - Moving back!");
+    // setMovingAway(true);
     setVelocity(vx, wz);
     break;
-  case states::S4_CHANGING_DIRECTION:
-    ROS_DEBUG("   S4 - Changing direction!");
+  case states::S5_CHANGING_DIRECTION:
+    ROS_DEBUG("   S5 - Changing direction!");
     setMovingAway(true);
     setVelocity(0, -wz_);
     break;
-  case states::S5_MOVING_AWAY:
-    ROS_DEBUG("   S5 - Moving away!");
+  case states::S6_MOVING_AWAY:
+    ROS_DEBUG("   S6 - Moving away!");
     setMovingAway(true);
     setVelocity(vx_, 0);
     break;
@@ -221,11 +242,71 @@ void MetalScanner::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
   {
     scanning_ = msg->data;
     ROS_INFO("   scanning: %s", scanning_ ? "true" : "false");
-    //whenever emergent stop is needed while scanning or
-    //whenever need to start scanning again while moving away
+    // whenever emergent stop is needed while scanning or
+    // whenever need to start scanning again while moving away
     if (scanning_ == moving_away_)
     {
       reset();
+    }
+  }
+}
+
+/**
+ * @brief MetalScanner::minesCallback
+ * @param msg
+ */
+void MetalScanner::minesCallback(
+    const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+  if (!isKnownMine(msg->pose.position))
+  {
+    mines_.push_back(msg->pose.position);
+  }
+  for (int i(0); i < mines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(
+            mines_[i], msg->pose.position) <= std_radius_)
+    {
+      mines_[i] =
+          utilities::Points::getMidstPoint(mines_[i], msg->pose.position);
+      return;
+    }
+  }
+}
+
+/**
+ * @brief MetalScanner::fakeMinesCallback
+ * @param msg
+ */
+void MetalScanner::fakeMinesCallback(
+    const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+  if (!isKnownFakeMine(msg->pose.position))
+  {
+    fake_mines_.push_back(msg->pose.position);
+    return;
+  }
+  ROS_ERROR("[FakeMineCB] Already known fake mine @ (%lf, %lf) with %lf",
+            msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+  for (int i(0); i < fake_mines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(
+            fake_mines_[i], msg->pose.position) <= fake_mines_[i].z)
+    {
+      ROS_ERROR("[FakeMineCB] Old fake mine position @ (%lf, %lf) with %lf",
+                fake_mines_[i].x, fake_mines_[i].y, fake_mines_[i].z);
+      fake_mines_[i] =
+          utilities::Points::getMidstPoint(fake_mines_[i], msg->pose.position);
+      if (fake_mines_[i].z < msg->pose.position.z)
+      {
+        fake_mines_[i].z = msg->pose.position.z;
+      }
+      fake_mines_[i].z += utilities::Points::getEuclidianDistance(
+                              fake_mines_[i], msg->pose.position) /
+                          2;
+      ROS_ERROR("[FakeMineCB] New fake mine position @ (%lf, %lf) with %lf",
+                fake_mines_[i].x, fake_mines_[i].y, fake_mines_[i].z);
+      return;
     }
   }
 }
@@ -240,5 +321,80 @@ void MetalScanner::reset()
   current_state_ = states::S0_SETTING_UP;
   setMovingAway(false);
   setVelocity(0, 0);
+}
+
+/**
+ * @brief MetalScanner::isKnownMine
+ * @return
+ */
+bool MetalScanner::isKnownMine() const
+{
+  return isKnownMine(coils_.getMidstPose().pose.position);
+}
+
+/**
+ * @brief MetalScanner::isKnownMine
+ * @param p
+ * @return
+ */
+bool MetalScanner::isKnownMine(geometry_msgs::Point p) const
+{
+  return isKnownMine(p.x, p.y);
+}
+
+/**
+ * @brief MetalScanner::isKnownMine
+ * @param x
+ * @param y
+ * @return
+ */
+bool MetalScanner::isKnownMine(double x, double y) const
+{
+  for (int i(0); i < mines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(mines_[i], x, y) <= std_radius_)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @brief MetalScanner::isKnownFakeMine
+ * @return
+ */
+bool MetalScanner::isKnownFakeMine() const
+{
+  return isKnownFakeMine(coils_.getMidstPose().pose.position);
+}
+
+/**
+ * @brief MetalScanner::isKnownFakeMine
+ * @param p
+ * @return
+ */
+bool MetalScanner::isKnownFakeMine(geometry_msgs::Point p) const
+{
+  return isKnownFakeMine(p.x, p.y);
+}
+
+/**
+ * @brief MetalScanner::isKnownFakeMine
+ * @param x
+ * @param y
+ * @return
+ */
+bool MetalScanner::isKnownFakeMine(double x, double y) const
+{
+  for (int i(0); i < fake_mines_.size(); i++)
+  {
+    if (utilities::Points::getEuclidianDistance(fake_mines_[i], x, y) <=
+        fake_mines_[i].z)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 }
