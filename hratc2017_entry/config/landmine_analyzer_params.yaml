@@ -4,4 +4,3 @@ coil_signal_filter_number_of_observations: 8
 end_duration: 1.5
 min_radius: 0.15
 max_radius: 0.45
-std_radius: 0.5

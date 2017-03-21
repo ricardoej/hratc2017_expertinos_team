@@ -63,6 +63,7 @@ public:
 private:
   ros::Time timer_;
   ros::Publisher cmd_vel_pub_;
+  ros::Publisher known_landmine_pub_;
   ros::Publisher moving_away_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber scanning_sub_;
@@ -98,6 +99,7 @@ private:
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
   void minesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
   void fakeMinesCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+  void publishKnownMine(bool known);
   void reset();
   bool isKnownMine() const;
   bool isKnownMine(geometry_msgs::Point p) const;

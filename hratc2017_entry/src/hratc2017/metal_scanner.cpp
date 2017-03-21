@@ -55,7 +55,10 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Standard radius of separation: %f", std_radius_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
-  coils_sub_ = nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
+  known_landmine_pub_ =
+      nh->advertise<std_msgs::Bool>("known_mine", 1, true);
+  coils_sub_ =
+      nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
   mines_sub_ = nh->subscribe("/HRATC_FW/set_mine", 10,
@@ -71,6 +74,7 @@ MetalScanner::~MetalScanner()
 {
   cmd_vel_pub_.shutdown();
   moving_away_pub_.shutdown();
+  known_landmine_pub_.shutdown();
   coils_sub_.shutdown();
   scanning_sub_.shutdown();
   mines_sub_.shutdown();
@@ -86,6 +90,14 @@ void MetalScanner::controlLoop()
   {
     ROS_DEBUG("   Not scanning and not moving away!!!");
     return;
+  }
+  bool known(isKnownMine());
+  publishKnownMine(known);
+  if (known)
+  {
+    timer_ = ros::Time::now();
+    ROS_INFO("   Known Mine  -->  S4_MOVING_BACK");
+    current_state_ = states::S4_MOVING_BACK;
   }
   setNextState();
   setVelocity();
@@ -309,6 +321,17 @@ void MetalScanner::fakeMinesCallback(
       return;
     }
   }
+}
+
+/**
+ * @brief MetalScanner::publishKnownMine
+ * @param known
+ */
+void MetalScanner::publishKnownMine(bool known)
+{
+  std_msgs::Bool msg;
+  msg.data = known;
+  known_landmine_pub_.publish(msg);
 }
 
 /**
