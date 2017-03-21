@@ -14,10 +14,10 @@
 #ifndef _HRATC2017_ENTRIES_METAL_SCANNER_H_
 #define _HRATC2017_ENTRIES_METAL_SCANNER_H_
 
-#include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/Twist.h>
 #include "hratc2017/coils.h"
+#include "hratc2017/displacement_monitor.h"
 #include "utilities/points.h"
 #include "utilities/ros_node.h"
 
@@ -25,8 +25,6 @@
 #define ANGULAR_VELOCITY_Z 0.3
 #define LINEAR_KP 1.0
 #define ANGULAR_KP 1.0
-#define LINEAR_TOLERANCE 0.05
-#define ANGULAR_TOLERANCE 0.01
 #define MIN_COIL_SIGNAL 0.6
 #define MAX_COIL_SIGNAL 0.8
 #define THRESHOLD 0.5
@@ -71,6 +69,7 @@ private:
   ros::Subscriber fake_mines_sub_;
   StateEnum current_state_;
   Coils coils_;
+  DisplacementMonitor disp_monitor_;
   double vx_;
   double wz_;
   double linear_Kp_;
@@ -92,6 +91,7 @@ private:
   std::vector<geometry_msgs::Point> mines_;
   std::vector<geometry_msgs::Point> fake_mines_;
   virtual void controlLoop();
+  virtual bool isSetted();
   void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);

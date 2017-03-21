@@ -36,6 +36,8 @@ private:
   float loop_rate_; // positive spin rate
   std::string name_; // ROS node name
   ros::NodeHandle *nh_; // private ros node handle (has-a relationship)
+  virtual bool isSetted();
+  virtual void init();
   virtual void controlLoop() = 0;
 };
 }

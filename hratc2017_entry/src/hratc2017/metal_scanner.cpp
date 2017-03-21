@@ -21,7 +21,7 @@ namespace hratc2017
  * @param nh
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener()),
+    : ROSNode(nh, 30), coils_(new tf::TransformListener()), disp_monitor_(nh),
       current_state_(states::S0_SETTING_UP), angular_error_(0), timer_(0),
       scanning_(false), moving_away_(false)
 {
@@ -37,8 +37,10 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Angular Kp: %f", angular_Kp_);
   pnh.param("linear_tolerance", linear_tolerance_, LINEAR_TOLERANCE);
   ROS_INFO("   Linear tolerance: %f", linear_tolerance_);
+  disp_monitor_.setLinearTolerance(linear_tolerance_);
   pnh.param("angular_tolerance", angular_tolerance_, ANGULAR_TOLERANCE);
   ROS_INFO("   Angular tolerance: %f", angular_tolerance_);
+  disp_monitor_.setAngularTolerance(angular_tolerance_);
   pnh.param("min_coil_signal", min_coil_signal_, MIN_COIL_SIGNAL);
   ROS_INFO("   Minimum coil signal: %f", min_coil_signal_);
   pnh.param("max_coil_signal", max_coil_signal_, MAX_COIL_SIGNAL);
@@ -55,16 +57,15 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Standard radius of separation: %f", std_radius_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
-  known_landmine_pub_ =
-      nh->advertise<std_msgs::Bool>("known_mine", 1, true);
-  coils_sub_ =
-      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
+  known_landmine_pub_ = nh->advertise<std_msgs::Bool>("known_mine", 1, true);
+  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
   mines_sub_ = nh->subscribe("/HRATC_FW/set_mine", 10,
                              &MetalScanner::minesCallback, this);
   fake_mines_sub_ = nh->subscribe("/HRATC_FW/set_fake_mine", 10,
                                   &MetalScanner::fakeMinesCallback, this);
+  reset();
 }
 
 /**
@@ -101,6 +102,15 @@ void MetalScanner::controlLoop()
   }
   setNextState();
   setVelocity();
+}
+
+/**
+ * @brief MetalScanner::isSetted
+ * @return
+ */
+bool MetalScanner::isSetted()
+{
+  return disp_monitor_.isSetted();
 }
 
 /**
@@ -339,11 +349,12 @@ void MetalScanner::publishKnownMine(bool known)
  */
 void MetalScanner::reset()
 {
-  ROS_INFO("   Resetting %s!!!", ROSNode::getName().c_str());
+  ROS_INFO("   Reseting Metal Scanner!!!");
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
   setMovingAway(false);
   setVelocity(0, 0);
+  disp_monitor_.reset();
 }
 
 /**

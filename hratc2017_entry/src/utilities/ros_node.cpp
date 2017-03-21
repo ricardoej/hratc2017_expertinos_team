@@ -53,6 +53,8 @@ void ROSNode::spin()
 {
   ros::Rate loop_rate(loop_rate_);
   ROS_INFO("%s is ON!!!", name_.c_str());
+  while (nh_->ok() && !isSetted());
+  init();
   while (nh_->ok())
   {
     controlLoop();
@@ -78,6 +80,23 @@ void ROSNode::shutdown(std::string message) const
 {
   shutdown();
   throw utilities::Exception(message);
+}
+
+/**
+ * @brief ROSNode::isSetted
+ * @return
+ */
+bool ROSNode::isSetted()
+{
+  return true;
+}
+
+/**
+ * @brief ROSNode::init
+ */
+void ROSNode::init()
+{
+
 }
 
 /**

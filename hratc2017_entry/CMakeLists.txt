@@ -35,6 +35,7 @@ include_directories(
 set(H_FILES
   include/hratc2017/coil.h
   include/hratc2017/coils.h
+  include/hratc2017/displacement_monitor.h
   include/hratc2017/map_coverage.h
   include/utilities/enum_converter.h
   include/utilities/exception.h
@@ -45,6 +46,7 @@ set(H_FILES
 set(CPP_FILES
   src/hratc2017/coil.cpp
   src/hratc2017/coils.cpp
+  src/hratc2017/displacement_monitor.cpp
   src/hratc2017/map_coverage.cpp
   src/utilities/exception.cpp
   src/utilities/points.cpp
