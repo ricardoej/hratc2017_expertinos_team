@@ -21,10 +21,12 @@ namespace hratc2017
  */
 WaypointsController::WaypointsController(ros::NodeHandle* nh)
     : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true),
-      active_goal_(false), scanning_(false), moving_away_(false)
+      active_goal_(false), avoiding_obstacle_(false), scanning_(false), moving_away_(false)
 {
   corners_sub_ =
       nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
+  avoiding_obstacle_sub_ = nh->subscribe("avoiding_obstacle", 1,
+                                &WaypointsController::avoidingObstacleCallback, this);
   scanning_sub_ = nh->subscribe("scanning", 1,
                                 &WaypointsController::scanningCallback, this);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
@@ -63,17 +65,25 @@ void WaypointsController::controlLoop()
   }
   else
   {
-    if ((scanning_ || moving_away_) && active_goal_)
+    if (!ok() && active_goal_)
     {
       move_base_client_.cancelAllGoals();
       ROS_INFO("Sent a cancel all goals.");
     }
-    else if (!scanning_ && ! moving_away_ && !active_goal_ && map_ && !map_->empty())
+    else if (ok() && !active_goal_ && map_ && !map_->empty())
     {
       sendGoal(map_->getNextWaypoint());
       publishWaypoint(map_->getNextWaypoint());
     }
   }
+}
+
+/**
+ * @brief WaypointsController::ok
+ */
+bool WaypointsController::ok() const
+{
+  return !scanning_ && !moving_away_ && !avoiding_obstacle_;
 }
 
 /**
@@ -156,6 +166,19 @@ void WaypointsController::cornersCallback(
   catch (utilities::Exception ex)
   {
     ROS_FATAL("Exception catched: %s", ex.what());
+  }
+}
+
+/**
+ * @brief WaypointsController::avoidingObstacleCallback
+ * @param msg
+ */
+void WaypointsController::avoidingObstacleCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+  if (avoiding_obstacle_ != msg->data)
+  {
+    avoiding_obstacle_ = msg->data;
+    ROS_DEBUG("Is avoiding obstacle? %s.", avoiding_obstacle_ ? "TRUE" : "FALSE");
   }
 }
 

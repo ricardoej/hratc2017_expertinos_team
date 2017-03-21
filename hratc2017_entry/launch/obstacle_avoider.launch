@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="obstacle_avoider" pkg="hratc2017_entry" type="obstacle_avoider_node" output="screen">
+    <rosparam file="$(find hratc2017_entry)/config/obstacle_avoider_params.yaml" command="load"/>
+    <remap from="cmd_vel" to="avoiding_obstacle/cmd_vel"/>
+    <remap from="scan" to="/scan_hokuyo"/>
+  </node>
+</launch>

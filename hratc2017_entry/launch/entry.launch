@@ -7,12 +7,11 @@
   <group ns="$(arg robot)">
     <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch">
       <arg name ="plot" value="$(arg plot)"/>
-		<arg name ="simulation" value="$(arg simulation)"/>
+      <arg name ="simulation" value="$(arg simulation)"/>
     </include>
-	 <include file="$(find hratc2017_entry)/launch/metal_scanner.launch">
-	   <arg name ="simulation" value="$(arg simulation)"/>
-	 </include>
-	 <include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>
+    <include file="$(find hratc2017_entry)/launch/metal_scanner.launch"/>
+    <include file="$(find hratc2017_entry)/launch/obstacle_avoider.launch"/>
+    <include file="$(find hratc2017_entry)/launch/waypoints_controller.launch"/>
     <node name="twist_mux" pkg="twist_mux" type="twist_mux" output="screen">
       <rosparam file="$(find hratc2017_entry)/config/twist_mux_params.yaml" command="load"/>
       <remap from="cmd_vel_out" to="/RosAria/cmd_vel" unless="$(arg simulation)"/>

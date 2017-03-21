@@ -55,7 +55,6 @@ add_library(hratc2017_utilities ${CPP_FILES})
 add_dependencies(hratc2017_utilities metal_detector_msgs_generate_messages_py)
 target_link_libraries(hratc2017_utilities ${catkin_LIBRARIES})
 
-
 add_executable(landmine_analyzer_node src/landmine_analyzer_node.cpp src/hratc2017/landmine_analyzer.cpp ${CPP_FILES})
 add_dependencies(landmine_analyzer_node metal_detector_msgs_generate_messages_py)
 target_link_libraries(landmine_analyzer_node ${catkin_LIBRARIES})
@@ -63,6 +62,9 @@ target_link_libraries(landmine_analyzer_node ${catkin_LIBRARIES})
 add_executable(metal_scanner_node src/metal_scanner_node.cpp src/hratc2017/metal_scanner.cpp ${CPP_FILES})
 add_dependencies(metal_scanner_node metal_detector_msgs_generate_messages_py)
 target_link_libraries(metal_scanner_node ${catkin_LIBRARIES})
+
+add_executable(obstacle_avoider_node src/obstacle_avoider_node.cpp src/hratc2017/obstacle_avoider.cpp ${CPP_FILES})
+target_link_libraries(obstacle_avoider_node ${catkin_LIBRARIES})
 
 add_executable(waypoints_controller_node src/waypoints_controller_node.cpp src/hratc2017/waypoints_controller.cpp ${CPP_FILES})
 add_dependencies(waypoints_controller_node metal_detector_msgs_generate_messages_py)

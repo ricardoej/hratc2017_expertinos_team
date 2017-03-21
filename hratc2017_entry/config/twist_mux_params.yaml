@@ -9,6 +9,11 @@ topics:
   topic   : metal_scanner/cmd_vel
   timeout : 1.5
   priority: 100
+-
+  name    : obstacle_avoider
+  topic   : obstacle_avoider/cmd_vel
+  timeout : 1.5
+  priority: 150
 
 locks:
 -
@@ -19,5 +24,10 @@ locks:
 -
   name    : moving_away
   topic   : moving_away
+  timeout : 0.0
+  priority: 80
+-
+  name    : avoiding_obstacle
+  topic   : avoiding_obstacle
   timeout : 0.0
   priority: 80
