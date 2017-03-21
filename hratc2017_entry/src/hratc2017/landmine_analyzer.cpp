@@ -45,8 +45,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
       "/HRATC_FW/set_fake_mine", 10, true);
   scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
-      nh->advertise<metal_detector_msgs::Coil>("/metal_detector/filtered", 10);
-  coils_sub_ = nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
+      nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
+  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
                                    &LandmineAnalyzer::movingAwayCallback, this);
   reset();

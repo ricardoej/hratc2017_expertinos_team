@@ -58,7 +58,7 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   known_landmine_pub_ =
       nh->advertise<std_msgs::Bool>("known_mine", 1, true);
   coils_sub_ =
-      nh->subscribe("/metal_detector", 10, &Coils::coilsCallback, &coils_);
+      nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   scanning_sub_ =
       nh->subscribe("scanning", 1, &MetalScanner::scanningCallback, this);
   mines_sub_ = nh->subscribe("/HRATC_FW/set_mine", 10,
