@@ -3,9 +3,9 @@
  *  whenever an oriented-object programming ROS Node class is created
  *  to enhance this one.
  *
- *  Version: 1.4.0
+ *  Version: 1.4.1
  *  Created on: 05/10/2016
- *  Modified on: 13/12/2016
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@unifei.edu.br)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -31,12 +31,13 @@ protected:
   bool ok() const;
   void shutdown() const;
   void shutdown(std::string message) const;
+  virtual void reset();
   
 private:
   float loop_rate_; // positive spin rate
   std::string name_; // ROS node name
   ros::NodeHandle *nh_; // private ros node handle (has-a relationship)
-  virtual bool isSetted();
+  virtual bool isSettedUp();
   virtual void init();
   virtual void controlLoop() = 0;
 };

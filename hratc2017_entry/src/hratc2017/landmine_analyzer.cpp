@@ -209,7 +209,7 @@ void LandmineAnalyzer::setScanning(bool scanning)
  */
 void LandmineAnalyzer::reset()
 {
-  ROS_INFO("   Resetting %s!!!", ROSNode::getName().c_str());
+  ROSNode::reset();
   sampling_ = false;
   setScanning(false);
   collected_center_ = false;

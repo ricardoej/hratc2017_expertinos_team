@@ -128,7 +128,7 @@ void DisplacementMonitor::odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   curr_phi_ = tf::getYaw(msg->pose.pose.orientation);
   if (!setted_)
   {
-    ROS_INFO("Odometry initialized!!!");
+    ROS_INFO("   Odometry initialized!!!");
     setted_ = true;
     prev_phi_ = curr_phi_;
     reset();

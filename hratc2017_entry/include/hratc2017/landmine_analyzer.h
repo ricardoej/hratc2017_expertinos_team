@@ -64,7 +64,7 @@ private:
   void publishFilteredCoilSignals() const;
   bool isKnownLandmine() const;
   void setScanning(bool scanning);
-  void reset();
+  virtual void reset();
   void derivativeCallback(const ros::TimerEvent& event);
   void movingAwayCallback(const std_msgs::Bool::ConstPtr& msg);
   double calculateDistance(geometry_msgs::Point p1, geometry_msgs::Point p2) const;

@@ -349,7 +349,7 @@ void MetalScanner::publishKnownMine(bool known)
  */
 void MetalScanner::reset()
 {
-  ROS_INFO("   Reseting Metal Scanner!!!");
+  ROSNode::reset();
   scanning_ = false;
   current_state_ = states::S0_SETTING_UP;
   setMovingAway(false);

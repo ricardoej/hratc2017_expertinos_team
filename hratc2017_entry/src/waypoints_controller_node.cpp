@@ -4,7 +4,7 @@
  *
  *  Version: 0.0.1
  *  Created on: 06/02/2017
- *  Modified on: 06/02/2017
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -21,7 +21,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "waypoints_controller_node");
   ros::NodeHandle nh;
-  hratc2017::WaypointsController node(&nh);
-  node.spin();
+  hratc2017::WaypointsController* node = new hratc2017::WaypointsController(&nh);
+  node->spin();
+  delete node;
   return 0;
 }

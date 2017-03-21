@@ -1,9 +1,9 @@
 /**
  *  This source file implements the ROSNode class.
  *
- *  Version: 1.4.0
+ *  Version: 1.4.1
  *  Created on: 05/10/2016
- *  Modified on: 13/12/2016
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@unifei.edu.br)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -53,8 +53,9 @@ void ROSNode::spin()
 {
   ros::Rate loop_rate(loop_rate_);
   ROS_INFO("%s is ON!!!", name_.c_str());
-  while (nh_->ok() && !isSetted());
+  while (nh_->ok() && !isSettedUp());
   init();
+  ROS_INFO("%s is setted up and initialized!!!", name_.c_str());
   while (nh_->ok())
   {
     controlLoop();
@@ -83,21 +84,20 @@ void ROSNode::shutdown(std::string message) const
 }
 
 /**
+ * @brief ROSNode::reset
+ */
+void ROSNode::reset() { ROS_INFO("   Resetting %s!!!", name_.c_str()); }
+
+/**
  * @brief ROSNode::isSetted
  * @return
  */
-bool ROSNode::isSetted()
-{
-  return true;
-}
+bool ROSNode::isSettedUp() { return true; }
 
 /**
  * @brief ROSNode::init
  */
-void ROSNode::init()
-{
-
-}
+void ROSNode::init() {}
 
 /**
  * @brief ROSNode::getNodeHandle encapsulates this ROS node handle.
@@ -115,8 +115,5 @@ std::string ROSNode::getName() const { return name_; }
  * @brief ROSNode::ok
  * @return if this ROS node controller is still running properly.
  */
-bool ROSNode::ok() const
-{
-  return nh_->ok();
-}
+bool ROSNode::ok() const { return nh_->ok(); }
 }
