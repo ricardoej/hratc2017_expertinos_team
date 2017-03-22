@@ -2,9 +2,9 @@
  *  This source file implements the LandmineAnalyzer class, which is
  *based on the ROSNode helper class. It controls the landmine_analyzer_node.
  *
- *  Version: 1.1.1
+ *  Version: 1.1.4
  *  Created on: 30/01/2017
- *  Modified on: 13/03/2017
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -23,7 +23,7 @@ namespace hratc2017
  * @param nh
  */
 LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener()), moving_away_(false)
+    : ROSNode(nh, 30), coils_(nh), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -46,7 +46,6 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
   scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
       nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
-  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
                                    &LandmineAnalyzer::movingAwayCallback, this);
   reset();
@@ -64,6 +63,15 @@ LandmineAnalyzer::~LandmineAnalyzer()
   filtered_coils_pub_.shutdown();
   coils_sub_.shutdown();
   moving_away_sub_.shutdown();
+}
+
+/**
+ * @brief LandmineAnalyzer::isSettedUp
+ * @return
+ */
+bool LandmineAnalyzer::isSettedUp()
+{
+  return coils_.isSettedUp();
 }
 
 /**
@@ -228,7 +236,7 @@ void LandmineAnalyzer::derivativeCallback(const ros::TimerEvent& event)
   // ROS_INFO("derived value: %lf", derivative);
   if (sampling_ && !moving_away_ && derivative < 0.0)
   {
-    ROS_WARN("Negative derived value!!");
+    //ROS_WARN("Negative derived value!!");
     /*
     publishFakeLandminePose();
     reset();*/

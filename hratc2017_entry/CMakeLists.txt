@@ -39,6 +39,8 @@ set(H_FILES
   include/hratc2017/map_coverage.h
   include/utilities/enum_converter.h
   include/utilities/exception.h
+  include/utilities/filter.h
+  include/utilities/mean_filter.h
   include/utilities/points.h
   include/utilities/ros_node.h
 )
@@ -49,6 +51,8 @@ set(CPP_FILES
   src/hratc2017/displacement_monitor.cpp
   src/hratc2017/map_coverage.cpp
   src/utilities/exception.cpp
+  src/utilities/filter.cpp
+  src/utilities/mean_filter.cpp
   src/utilities/points.cpp
   src/utilities/ros_node.cpp
 )

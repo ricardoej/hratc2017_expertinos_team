@@ -2,9 +2,9 @@
  *  This source file implements the MetalScanner class, which is
  *based on the ROSNode helper class. It controls the metal_scanner_node.
  *
- *  Version: 1.1.1
+ *  Version: 1.1.4
  *  Created on: 09/02/2017
- *  Modified on: 13/03/2017
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -21,7 +21,7 @@ namespace hratc2017
  * @param nh
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener()), disp_monitor_(nh),
+    : ROSNode(nh, 30), coils_(nh), disp_monitor_(nh),
       current_state_(states::S0_SETTING_UP), angular_error_(0), timer_(0),
       scanning_(false), moving_away_(false)
 {
@@ -108,9 +108,9 @@ void MetalScanner::controlLoop()
  * @brief MetalScanner::isSetted
  * @return
  */
-bool MetalScanner::isSetted()
+bool MetalScanner::isSettedUp()
 {
-  return disp_monitor_.isSetted();
+  return disp_monitor_.isSettedUp() && coils_.isSettedUp();
 }
 
 /**

@@ -54,6 +54,7 @@ private:
   double std_radius_;
   geometry_msgs::Point mine_center_;
   geometry_msgs::Point mine_bound_;
+  virtual bool isSettedUp();
   virtual void controlLoop();
   void sample();
   void publish();

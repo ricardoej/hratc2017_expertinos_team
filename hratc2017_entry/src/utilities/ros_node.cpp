@@ -52,8 +52,12 @@ ROSNode::~ROSNode() {}
 void ROSNode::spin()
 {
   ros::Rate loop_rate(loop_rate_);
-  ROS_INFO("%s is ON!!!", name_.c_str());
-  while (nh_->ok() && !isSettedUp());
+  ROS_INFO("Setting %s up!!!", name_.c_str());
+  while (nh_->ok() && !isSettedUp())
+  {
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
   init();
   ROS_INFO("%s is setted up and initialized!!!", name_.c_str());
   while (nh_->ok())

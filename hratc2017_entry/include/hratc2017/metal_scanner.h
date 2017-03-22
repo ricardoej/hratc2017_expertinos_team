@@ -90,8 +90,8 @@ private:
   bool moving_away_;
   std::vector<geometry_msgs::Point> mines_;
   std::vector<geometry_msgs::Point> fake_mines_;
+  virtual bool isSettedUp();
   virtual void controlLoop();
-  virtual bool isSetted();
   void setNextState();
   void setVelocity();
   void setVelocity(double vx, double wz);

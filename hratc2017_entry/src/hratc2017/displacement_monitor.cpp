@@ -22,7 +22,7 @@ DisplacementMonitor::DisplacementMonitor(ros::NodeHandle* nh,
                                          double linear_tolerance,
                                          double angular_tolerance)
     : linear_tolerance_(linear_tolerance),
-      angular_tolerance_(angular_tolerance), setted_(false)
+      angular_tolerance_(angular_tolerance), setted_up_(false)
 {
   odom_sub_ =
       nh->subscribe("odom", 1, &DisplacementMonitor::odomCallback, this);
@@ -38,7 +38,7 @@ DisplacementMonitor::~DisplacementMonitor() { odom_sub_.shutdown(); }
  * @brief DisplacementMonitor::isSetted
  * @return
  */
-bool DisplacementMonitor::isSetted() const { return setted_; }
+bool DisplacementMonitor::isSettedUp() const { return setted_up_; }
 
 /**
  * @brief DisplacementMonitor::goalAchieved
@@ -126,10 +126,10 @@ void DisplacementMonitor::odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   curr_x_ = msg->pose.pose.position.x;
   curr_y_ = msg->pose.pose.position.y;
   curr_phi_ = tf::getYaw(msg->pose.pose.orientation);
-  if (!setted_)
+  if (!setted_up_)
   {
     ROS_INFO("   Odometry initialized!!!");
-    setted_ = true;
+    setted_up_ = true;
     prev_phi_ = curr_phi_;
     reset();
   }
