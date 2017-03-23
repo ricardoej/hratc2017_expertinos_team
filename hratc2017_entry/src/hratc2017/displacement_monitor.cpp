@@ -22,7 +22,7 @@ DisplacementMonitor::DisplacementMonitor(ros::NodeHandle* nh,
                                          double linear_tolerance,
                                          double angular_tolerance)
     : linear_tolerance_(linear_tolerance),
-      angular_tolerance_(angular_tolerance), setted_(false)
+      angular_tolerance_(angular_tolerance), setted_up_(false)
 {
   odom_sub_ =
       nh->subscribe("odom", 1, &DisplacementMonitor::odomCallback, this);
@@ -38,7 +38,16 @@ DisplacementMonitor::~DisplacementMonitor() { odom_sub_.shutdown(); }
  * @brief DisplacementMonitor::isSetted
  * @return
  */
-bool DisplacementMonitor::isSetted() const { return setted_; }
+bool DisplacementMonitor::isSettedUp() const { return setted_up_; }
+
+/**
+ * @brief DisplacementMonitor::isGoalSetted
+ * @return
+ */
+bool DisplacementMonitor::isGoalSetted() const
+{
+  return goal_setted_;
+}
 
 /**
  * @brief DisplacementMonitor::goalAchieved
@@ -46,10 +55,28 @@ bool DisplacementMonitor::isSetted() const { return setted_; }
  */
 bool DisplacementMonitor::goalAchieved() const
 {
-  return fabs(disp_x_ - goal_x_) <= linear_tolerance_ &&
+  return goal_setted_ && fabs(disp_x_ - goal_x_) <= linear_tolerance_ &&
          fabs(disp_y_ - goal_y_) <= linear_tolerance_ &&
-         fabs(disp_phi_ - goal_phi_) <= angular_tolerance_;
+      fabs(disp_phi_ - goal_phi_) <= angular_tolerance_;
 }
+
+/**
+ * @brief DisplacementMonitor::getCurrX
+ * @return
+ */
+double DisplacementMonitor::getCurrX() const{ return curr_x_; }
+
+/**
+ * @brief DisplacementMonitor::getCurrY
+ * @return
+ */
+double DisplacementMonitor::getCurrY() const{ return curr_y_; }
+
+/**
+ * @brief DisplacementMonitor::getCurrPhi
+ * @return
+ */
+double DisplacementMonitor::getCurrPhi() const{ return curr_phi_; }
 
 /**
  * @brief DisplacementMonitor::getDispX
@@ -72,6 +99,16 @@ double DisplacementMonitor::getDispPhi() const { return disp_phi_; }
 /**
  * @brief DisplacementMonitor::setGoal
  * @param x
+ * @param phi
+ */
+void DisplacementMonitor::setGoal(double x, double phi)
+{
+  setGoal(x, 0.0, phi);
+}
+
+/**
+ * @brief DisplacementMonitor::setGoal
+ * @param x
  * @param y
  * @param phi
  */
@@ -88,6 +125,7 @@ void DisplacementMonitor::setGoal(double x, double y, double phi)
   {
     goal_phi_ -= 2 * M_PI;
   }
+  goal_setted_ = true;
 }
 
 /**
@@ -113,6 +151,7 @@ void DisplacementMonitor::setAngularTolerance(double tol)
  */
 void DisplacementMonitor::reset()
 {
+  goal_setted_ = false;
   start_x_ = curr_x_;
   start_y_ = curr_y_;
   start_phi_ = curr_phi_;
@@ -126,10 +165,10 @@ void DisplacementMonitor::odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   curr_x_ = msg->pose.pose.position.x;
   curr_y_ = msg->pose.pose.position.y;
   curr_phi_ = tf::getYaw(msg->pose.pose.orientation);
-  if (!setted_)
+  if (!setted_up_)
   {
     ROS_INFO("   Odometry initialized!!!");
-    setted_ = true;
+    setted_up_ = true;
     prev_phi_ = curr_phi_;
     reset();
   }

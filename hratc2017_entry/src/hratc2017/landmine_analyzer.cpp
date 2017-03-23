@@ -2,9 +2,9 @@
  *  This source file implements the LandmineAnalyzer class, which is
  *based on the ROSNode helper class. It controls the landmine_analyzer_node.
  *
- *  Version: 1.1.1
+ *  Version: 1.1.4
  *  Created on: 30/01/2017
- *  Modified on: 13/03/2017
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luis Victor Pessiqueli Bonin (luis-bonin@unifei.edu.br)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -23,7 +23,7 @@ namespace hratc2017
  * @param nh
  */
 LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener()), moving_away_(false)
+    : ROSNode(nh, 30), coils_(nh), moving_away_(false)
 {
   ros::NodeHandle pnh("~");
   coils_.setParameters(pnh);
@@ -46,9 +46,10 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
   scanning_pub_ = nh->advertise<std_msgs::Bool>("scanning", 1, true);
   filtered_coils_pub_ =
       nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
-  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, &coils_);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
                                    &LandmineAnalyzer::movingAwayCallback, this);
+  known_mine_sub_ = nh->subscribe("known_mine", 1,
+                                  &LandmineAnalyzer::knownMineCallback, this);
   reset();
 }
 
@@ -65,6 +66,12 @@ LandmineAnalyzer::~LandmineAnalyzer()
   coils_sub_.shutdown();
   moving_away_sub_.shutdown();
 }
+
+/**
+ * @brief LandmineAnalyzer::isSettedUp
+ * @return
+ */
+bool LandmineAnalyzer::isSettedUp() { return coils_.isSettedUp(); }
 
 /**
  * @brief LandmineAnalyzer::controlLoop
@@ -228,7 +235,7 @@ void LandmineAnalyzer::derivativeCallback(const ros::TimerEvent& event)
   // ROS_INFO("derived value: %lf", derivative);
   if (sampling_ && !moving_away_ && derivative < 0.0)
   {
-    ROS_WARN("Negative derived value!!");
+    // ROS_WARN("Negative derived value!!");
     /*
     publishFakeLandminePose();
     reset();*/
@@ -246,6 +253,15 @@ void LandmineAnalyzer::movingAwayCallback(const std_msgs::Bool::ConstPtr& msg)
     moving_away_ = msg->data;
     ROS_INFO("   moving away: %s", moving_away_ ? "true" : "false");
   }
+}
+
+/**
+ * @brief LandmineAnalyzer::knownMineCallback
+ * @param msg
+ */
+void LandmineAnalyzer::knownMineCallback(const std_msgs::Bool::ConstPtr& msg)
+{
+  known_mine_ = msg->data;
 }
 
 /**

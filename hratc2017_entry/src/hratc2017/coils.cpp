@@ -2,9 +2,9 @@
  *  This source file implements the Coils class. This class encapsulates helpers
  *methods that evaluates metal detector readings.
  *
- *  Version: 1.0.4
+ *  Version: 1.1.4
  *  Created on: 30/01/2017
- *  Modified on: 10/03/2017
+ *  Modified on: 22/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -18,28 +18,20 @@ namespace hratc2017
  * @brief Coils::Coils
  * @param tf
  */
-Coils::Coils(tf::TransformListener* tf)
-    : left_("left_coil"), right_("right_coil"), tf_(tf)
+Coils::Coils(ros::NodeHandle* nh)
+    : left_("left_coil"), right_("right_coil"), left_updated_(false),
+      right_updated_(false)
 {
-  EMPTY_POSE.header.frame_id = "UNDEF";
-  EMPTY_POSE.pose.position.x = 0;
-  EMPTY_POSE.pose.position.y = 0;
-  EMPTY_POSE.pose.position.z = 0;
-  EMPTY_POSE.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
   last_sample_ = (getRightValue() + getLeftValue()) / 2;
+  pose_update_ = nh->createTimer(ros::Duration(POSE_UPDATE_INTERVAL),
+                                 &Coils::updatePose, this, false, false);
+  coils_sub_ = nh->subscribe("/coils", 10, &Coils::coilsCallback, this);
 }
 
 /**
  * @brief Coils::~Coils
  */
-Coils::~Coils()
-{
-  if (tf_)
-  {
-    delete tf_;
-    tf_ = NULL;
-  }
-}
+Coils::~Coils() {}
 
 /**
  * @brief Coils::getLeftValue
@@ -102,6 +94,16 @@ double Coils::getRightSampleTime() const { return right_.getSampleTime(); }
 double Coils::getMeanSampleTime() const
 {
   return (left_.getSampleTime() + right_.getSampleTime()) / 2;
+}
+
+/**
+ * @brief Coils::setMaxPoseUpdateInterval
+ * @param max_pose_update_interval
+ */
+void Coils::setMaxPoseUpdateInterval(double max_pose_update_interval)
+{
+  left_.setMaxPoseUpdateInterval(max_pose_update_interval);
+  right_.setMaxPoseUpdateInterval(max_pose_update_interval);
 }
 
 /**
@@ -244,6 +246,31 @@ bool Coils::isBothNotHigh() const
 }
 
 /**
+ * @brief Coils::isSettedUp
+ * @return
+ */
+bool Coils::isSettedUp()
+{
+  if (!left_updated_ && updateCoilTransform(&left_))
+  {
+    ROS_INFO("   Updated left transform.");
+    left_updated_ = true;
+  }
+  if (!right_updated_ && updateCoilTransform(&right_))
+  {
+    ROS_INFO("   Updated right transform.");
+    right_updated_ = true;
+  }
+  if (left_updated_ && right_updated_)
+  {
+    ROS_INFO("   Starting pose update timer.");
+    pose_update_.start();
+    return true;
+  }
+  return false;
+}
+
+/**
  * @brief Coils::calculateDerivative
  */
 void Coils::calculateDerivative()
@@ -306,6 +333,9 @@ void Coils::operator=(const metal_detector_msgs::Coil& msg)
 void Coils::setParameters(const ros::NodeHandle& pnh)
 {
   double aux;
+  pnh.param("max_pose_update_interval", aux, DEFAULT_MAX_POSE_UPDATE_INTERVAL);
+  ROS_INFO("   Maximun pose update interval: %f", aux);
+  setMaxPoseUpdateInterval(aux);
   pnh.param("derivative_sample_time", aux, DEFAULT_DERIVATIVE_SAMPLE_TIME);
   ROS_INFO("   Derivative sample time: %f", aux);
   setSampleTime(aux);
@@ -344,7 +374,7 @@ void Coils::coilsCallback(const metal_detector_msgs::Coil::ConstPtr& msg)
  */
 geometry_msgs::PoseStamped Coils::getLeftPose() const
 {
-  return getPose(left_.getFrameId());
+  return left_.getPose();
 }
 
 /**
@@ -353,7 +383,7 @@ geometry_msgs::PoseStamped Coils::getLeftPose() const
  */
 geometry_msgs::PoseStamped Coils::getRightPose() const
 {
-  return getPose(right_.getFrameId());
+  return right_.getPose();
 }
 
 /**
@@ -362,47 +392,52 @@ geometry_msgs::PoseStamped Coils::getRightPose() const
  */
 geometry_msgs::PoseStamped Coils::getMidstPose() const
 {
-  geometry_msgs::PoseStamped midst_pose(getPose(left_.getFrameId()));
-  geometry_msgs::PoseStamped right_pose(getPose(right_.getFrameId()));
-  midst_pose.pose.position.x += right_pose.pose.position.x;
+  geometry_msgs::PoseStamped midst_pose(left_.getPose());
+  midst_pose.pose.position.x += right_.getPose().pose.position.x;
   midst_pose.pose.position.x /= 2;
-  midst_pose.pose.position.y += right_pose.pose.position.y;
+  midst_pose.pose.position.y += right_.getPose().pose.position.y;
   midst_pose.pose.position.y /= 2;
   return midst_pose;
 }
 
 /**
- * @brief Coils::getPose
- * @param coil
- * @return
+ * @brief Coils::updatePose
+ * @param event
  */
-geometry_msgs::PoseStamped Coils::getPose(std::string frame_id) const
+void Coils::updatePose(const ros::TimerEvent& event)
 {
-  if (!tf_)
-  {
-    return EMPTY_POSE;
-  }
-  geometry_msgs::PoseStamped pose;
-  tf::StampedTransform transform;
-  ros::Time now(ros::Time::now());
   try
   {
-    tf_->waitForTransform(MINEFIELD_FRAME_ID, frame_id, now,
-                          ros::Duration(0.5));
-    tf_->lookupTransform(MINEFIELD_FRAME_ID, frame_id, now, transform);
+    tf::StampedTransform robot_tf;
+    tf_.lookupTransform(MINEFIELD_FRAME_ID, BASE_FRAME_ID, ros::Time(0),
+                        robot_tf);
+    left_.setPose(robot_tf);
+    right_.setPose(robot_tf);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("Robot pose was not updated: %s", ex.what());
+  }
+}
+
+/**
+ * @brief Coils::updateCoilPose
+ * @param coil
+ */
+bool Coils::updateCoilTransform(Coil* coil)
+{
+  try
+  {
+    tf::StampedTransform coil_tf;
+    tf_.lookupTransform(BASE_FRAME_ID, coil->getFrameId(), ros::Time(0),
+                        coil_tf);
+    coil->setTransform(coil_tf);
   }
   catch (tf::TransformException& ex)
   {
     ROS_ERROR("%s", ex.what());
-    // tem que tratar melhor essa excessao!!!
-    return EMPTY_POSE;
+    return false;
   }
-  pose.header.frame_id = frame_id;
-  pose.header.stamp = ros::Time::now();
-  pose.pose.position.x = transform.getOrigin().x();
-  pose.pose.position.y = transform.getOrigin().y();
-  pose.pose.position.z = transform.getOrigin().z();
-  pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-  return pose;
+  return true;
 }
 }

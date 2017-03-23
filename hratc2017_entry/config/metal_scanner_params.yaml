@@ -8,6 +8,3 @@ angular_tolerance: 0.01
 min_coil_signal: 0.4
 max_coil_signal: 0.95
 pause_time: 1.0
-safe_time: 1.0
-rotation_time: 3.0
-moving_away_time: 2.0

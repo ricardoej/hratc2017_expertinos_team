@@ -43,9 +43,11 @@ private:
   ros::Publisher filtered_coils_pub_;
   ros::Subscriber coils_sub_;
   ros::Subscriber moving_away_sub_;
+  ros::Subscriber known_mine_sub_;
   Coils coils_;
   bool sampling_;
   bool moving_away_;
+  bool known_mine_;
   bool collected_center_;
   double max_coil_signal_;
   double end_duration_;
@@ -54,6 +56,7 @@ private:
   double std_radius_;
   geometry_msgs::Point mine_center_;
   geometry_msgs::Point mine_bound_;
+  virtual bool isSettedUp();
   virtual void controlLoop();
   void sample();
   void publish();
@@ -62,11 +65,11 @@ private:
   void publishFakeLandminePose();
   void publishFakeLandminePose(double x, double y, double radius);
   void publishFilteredCoilSignals() const;
-  bool isKnownLandmine() const;
   void setScanning(bool scanning);
   virtual void reset();
   void derivativeCallback(const ros::TimerEvent& event);
   void movingAwayCallback(const std_msgs::Bool::ConstPtr& msg);
+  void knownMineCallback(const std_msgs::Bool::ConstPtr& msg);
   double calculateDistance(geometry_msgs::Point p1, geometry_msgs::Point p2) const;
   double calculateRadius() const;
 };

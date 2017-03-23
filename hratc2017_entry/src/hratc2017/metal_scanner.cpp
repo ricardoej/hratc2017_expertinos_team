@@ -2,9 +2,9 @@
  *  This source file implements the MetalScanner class, which is
  *based on the ROSNode helper class. It controls the metal_scanner_node.
  *
- *  Version: 1.1.1
+ *  Version: 1.1.4
  *  Created on: 09/02/2017
- *  Modified on: 13/03/2017
+ *  Modified on: 21/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *          Luís Victor Pessiqueli Bonin (luis-bonin@hotmail.com)
  *          Luiz Fernando Nunes (luizfernandolfn@gmail.com)
@@ -21,7 +21,7 @@ namespace hratc2017
  * @param nh
  */
 MetalScanner::MetalScanner(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), coils_(new tf::TransformListener()), disp_monitor_(nh),
+    : ROSNode(nh, 30), coils_(nh), disp_monitor_(nh),
       current_state_(states::S0_SETTING_UP), angular_error_(0), timer_(0),
       scanning_(false), moving_away_(false)
 {
@@ -47,12 +47,6 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Maximum coil signal: %f", max_coil_signal_);
   pnh.param("pause_time", pause_time_, PAUSE_TIME);
   ROS_INFO("   Pause time %f", pause_time_);
-  pnh.param("safe_time", safe_time_, SAFE_TIME);
-  ROS_INFO("   Safe time %f", safe_time_);
-  pnh.param("rotation_time", rotation_time_, ROTATION_TIME);
-  ROS_INFO("   Rotation time %f", rotation_time_);
-  pnh.param("moving_away_time", moving_away_time_, MOVING_AWAY_TIME);
-  ROS_INFO("   Moving away time %f", moving_away_time_);
   pnh.param("std_radius", std_radius_, STANDARD_RADIUS);
   ROS_INFO("   Standard radius of separation: %f", std_radius_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
@@ -94,12 +88,6 @@ void MetalScanner::controlLoop()
   }
   bool known(isKnownMine());
   publishKnownMine(known);
-  if (known)
-  {
-    timer_ = ros::Time::now();
-    ROS_INFO("   Known Mine  -->  S4_MOVING_BACK");
-    current_state_ = states::S4_MOVING_BACK;
-  }
   setNextState();
   setVelocity();
 }
@@ -108,9 +96,9 @@ void MetalScanner::controlLoop()
  * @brief MetalScanner::isSetted
  * @return
  */
-bool MetalScanner::isSetted()
+bool MetalScanner::isSettedUp()
 {
-  return disp_monitor_.isSetted();
+  return disp_monitor_.isSettedUp() && coils_.isSettedUp();
 }
 
 /**
@@ -129,49 +117,61 @@ void MetalScanner::setNextState()
     if (fabs(angular_error_) <= angular_tolerance_)
     {
       linear_reference_ = max_coil_signal_;
-      current_state_ = states::S2_SCANNING;
-      ROS_INFO("   S1_ALIGNING  -->  S2_SCANNING");
+      current_state_ = states::S2_SCANNING_FORWARD;
+      ROS_INFO("   S1_ALIGNING  -->  S2_SCANNING_FORWARD");
     }
     break;
-  case states::S2_SCANNING:
+  case states::S2_SCANNING_FORWARD:
     if (coils_.isLeftHigh() || coils_.isRightHigh())
     {
       linear_reference_ = min_coil_signal_;
       timer_ = ros::Time::now();
       current_state_ = states::S3_HOLDING_ON;
       ROS_INFO("   S2_SCANNING  -->  S3_HOLDING_ON");
+      bool known(isKnownMine());
+      if (known)
+      {
+        ROS_INFO("   Known Mine  -->  S4_SCANNING_BACK");
+        current_state_ = states::S4_SCANNING_BACK;
+      }
     }
     break;
   case states::S3_HOLDING_ON:
     if ((ros::Time::now() - timer_).toSec() > pause_time_)
     {
-      timer_ = ros::Time::now();
-      current_state_ = states::S4_MOVING_BACK;
-      ROS_INFO("   S3_HOLDING_ON  -->  S4_MOVING_BACK");
+      current_state_ = states::S4_SCANNING_BACK;
+      ROS_INFO("   S3_HOLDING_ON  -->  S4_SCANNING_BACK");
     }
     break;
-  case states::S4_MOVING_BACK:
-    if (!coils_.isBothLow())
+  case states::S4_SCANNING_BACK:
+    if (coils_.isBothLow())
     {
-      timer_ = ros::Time::now();
-    }
-    else if ((ros::Time::now() - timer_).toSec() > safe_time_)
-    {
-      timer_ = ros::Time::now();
-      current_state_ = states::S5_CHANGING_DIRECTION;
-      ROS_INFO("   S4_MOVING_BACK  -->  S5_CHANGING_DIRECTION");
+      disp_monitor_.reset();
+      disp_monitor_.setGoal(S5_MOVING_BACK_X);
+      current_state_ = states::S5_MOVING_BACK;
+      ROS_INFO("   S4_SCANNING_BACK  -->  S5_MOVING_BACK");
     }
     break;
-  case states::S5_CHANGING_DIRECTION:
-    if ((ros::Time::now() - timer_).toSec() > rotation_time_)
+  case states::S5_MOVING_BACK:
+    if (disp_monitor_.goalAchieved())
     {
-      timer_ = ros::Time::now();
-      current_state_ = states::S6_MOVING_AWAY;
+      disp_monitor_.reset();
+      disp_monitor_.setGoal(0.0, S6_CHANGING_DIRECTION_PHI);
+      current_state_ = states::S6_CHANGING_DIRECTION;
+      ROS_INFO("   S5_MOVING_BACK  -->  S6_CHANGING_DIRECTION");
+    }
+    break;
+  case states::S6_CHANGING_DIRECTION:
+    if (disp_monitor_.goalAchieved())
+    {
+      disp_monitor_.reset();
+      disp_monitor_.setGoal(0.0, S7_MOVING_AWAY_X);
+      current_state_ = states::S7_MOVING_AWAY;
       ROS_INFO("   S5_CHANGING_DIRECTION  -->  S6_MOVING_AWAY");
     }
     break;
-  case states::S6_MOVING_AWAY:
-    if ((ros::Time::now() - timer_).toSec() > moving_away_time_)
+  case states::S7_MOVING_AWAY:
+    if (disp_monitor_.goalAchieved())
     {
       reset();
       ROS_INFO("   S6_MOVING_AWAY  -->  S0_SETTING_UP");
@@ -203,26 +203,31 @@ void MetalScanner::setVelocity()
     ROS_DEBUG("   S1 - Aligning!");
     setVelocity(0, wz);
     break;
-  case states::S2_SCANNING:
-    ROS_DEBUG("   S2 - Scanning!");
+  case states::S2_SCANNING_FORWARD:
+    ROS_DEBUG("   S2 - Scanning forward!");
     setVelocity(vx, wz);
     break;
   case states::S3_HOLDING_ON:
     ROS_DEBUG("   S3 - Holding on!");
     setVelocity(0, 0);
     break;
-  case states::S4_MOVING_BACK:
-    ROS_DEBUG("   S4 - Moving back!");
+  case states::S4_SCANNING_BACK:
+    ROS_DEBUG("   S4 - Scanning back!");
     // setMovingAway(true);
     setVelocity(vx, wz);
     break;
-  case states::S5_CHANGING_DIRECTION:
-    ROS_DEBUG("   S5 - Changing direction!");
+  case states::S5_MOVING_BACK:
+    ROS_DEBUG("   S5 - Moving back!");
+    // setMovingAway(true);
+    setVelocity(-vx_, 0);
+    break;
+  case states::S6_CHANGING_DIRECTION:
+    ROS_DEBUG("   S6 - Changing direction!");
     setMovingAway(true);
     setVelocity(0, -wz_);
     break;
-  case states::S6_MOVING_AWAY:
-    ROS_DEBUG("   S6 - Moving away!");
+  case states::S7_MOVING_AWAY:
+    ROS_DEBUG("   S7 - Moving away!");
     setMovingAway(true);
     setVelocity(vx_, 0);
     break;

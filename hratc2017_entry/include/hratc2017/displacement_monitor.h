@@ -9,8 +9,8 @@
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
-#ifndef DISPLACEMENT_MONITOR_H
-#define DISPLACEMENT_MONITOR_H
+#ifndef _HRATC2017_DISPLACEMENT_MONITOR_H_
+#define _HRATC2017_DISPLACEMENT_MONITOR_H_
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
@@ -28,11 +28,16 @@ public:
                       double linear_tolerance = LINEAR_TOLERANCE,
                       double angular_tolerance = ANGULAR_TOLERANCE);
   virtual ~DisplacementMonitor();
-  bool isSetted() const;
+  bool isSettedUp() const;
+  bool isGoalSetted() const;
   bool goalAchieved() const;
+  double getCurrX() const;
+  double getCurrY() const;
+  double getCurrPhi() const;
   double getDispX() const;
   double getDispY() const;
   double getDispPhi() const;
+  void setGoal(double x, double phi = 0.0);
   void setGoal(double x, double y, double phi);
   void setLinearTolerance(double tol);
   void setAngularTolerance(double tol);
@@ -40,7 +45,8 @@ public:
 
 private:
   ros::Subscriber odom_sub_;
-  bool setted_;
+  bool setted_up_;
+  bool goal_setted_;
   double start_x_, start_y_, start_phi_;
   double curr_x_, curr_y_, curr_phi_, prev_phi_;
   double disp_x_, disp_y_, disp_phi_;
@@ -50,4 +56,4 @@ private:
 };
 }
 
-#endif // DISPLACEMENT_MONITOR_H
+#endif // _HRATC2017_DISPLACEMENT_MONITOR_H_

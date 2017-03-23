@@ -1,9 +1,9 @@
 /**
  *  This header file defines the Coils class.
  *
- *  Version: 1.0.4
+ *  Version: 1.1.4
  *  Created on: 30/01/2017
- *  Modified on: 10/03/2017
+ *  Modified on: 22/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
@@ -11,15 +11,14 @@
 #ifndef _HRATC2017_SENSORS_COILS_H_
 #define _HRATC2017_SENSORS_COILS_H_
 
-#include <sstream>
 #include <ros/ros.h>
-#include <tf/tf.h>
 #include <tf/transform_listener.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <metal_detector_msgs/Coil.h>
 #include "hratc2017/coil.h"
 
 #define MINEFIELD_FRAME_ID "/minefield"
+#define BASE_FRAME_ID "/base_link"
+#define POSE_UPDATE_INTERVAL 0.15
 
 namespace hratc2017
 {
@@ -27,7 +26,7 @@ namespace hratc2017
 class Coils
 {
 public:
-  Coils(tf::TransformListener* tf = NULL);
+  Coils(ros::NodeHandle* nh);
   virtual ~Coils();
   float getLeftValue() const;
   float getRightValue() const;
@@ -38,6 +37,7 @@ public:
   double getLeftSampleTime() const;
   double getRightSampleTime() const;
   double getMeanSampleTime() const;
+  void setMaxPoseUpdateInterval(double max_pose_update_interval);
   void setSampleTime(double sample_time);
   void setLowThreshold(double low_threshold);
   void setHighThreshold(double high_threshold);
@@ -55,6 +55,7 @@ public:
   bool isBothHigh() const;
   bool isBothNotLow() const;
   bool isBothNotHigh() const;
+  bool isSettedUp();
   void calculateDerivative();
   metal_detector_msgs::Coil to_msg() const;
   std::string str() const;
@@ -68,12 +69,17 @@ public:
   geometry_msgs::PoseStamped getMidstPose() const;
 
 private:
+  ros::Subscriber coils_sub_;
+  ros::Timer pose_update_;
+  tf::TransformListener tf_;
   Coil left_;
   Coil right_;
   float last_sample_;
-  tf::TransformListener* tf_;
-  geometry_msgs::PoseStamped EMPTY_POSE;
-  geometry_msgs::PoseStamped getPose(std::string frame_id) const;
+  bool left_updated_;
+  bool right_updated_;
+  void updatePose(const ros::TimerEvent& event);
+  bool updateCoilTransform(Coil *coil);
+
 };
 }
 

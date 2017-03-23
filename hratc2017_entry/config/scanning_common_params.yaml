@@ -1,3 +1,4 @@
+max_pose_update_interval: 0.75
 low_coil_signal_threshold: 0.5
 high_coil_signal_threshold: 0.95
 derivative_sample_time: 0.1
