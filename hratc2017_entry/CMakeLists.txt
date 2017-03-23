@@ -37,6 +37,7 @@ set(H_FILES
   include/hratc2017/coils.h
   include/hratc2017/displacement_monitor.h
   include/hratc2017/map_coverage.h
+  include/hratc2017/map_controller.h
   include/utilities/enum_converter.h
   include/utilities/exception.h
   include/utilities/points.h
@@ -48,6 +49,7 @@ set(CPP_FILES
   src/hratc2017/coils.cpp
   src/hratc2017/displacement_monitor.cpp
   src/hratc2017/map_coverage.cpp
+  src/hratc2017/map_controller.cpp
   src/utilities/exception.cpp
   src/utilities/points.cpp
   src/utilities/ros_node.cpp
@@ -71,3 +73,6 @@ target_link_libraries(obstacle_avoider_node ${catkin_LIBRARIES})
 add_executable(waypoints_controller_node src/waypoints_controller_node.cpp src/hratc2017/waypoints_controller.cpp ${CPP_FILES})
 add_dependencies(waypoints_controller_node metal_detector_msgs_generate_messages_py)
 target_link_libraries(waypoints_controller_node ${catkin_LIBRARIES})
+
+add_executable(map_controller_node src/map_controller_node.cpp src/hratc2017/map_controller.cpp ${CPP_FILES})
+target_link_libraries(map_controller_node ${catkin_LIBRARIES})

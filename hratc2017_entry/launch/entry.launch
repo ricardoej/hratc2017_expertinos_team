@@ -19,6 +19,7 @@
       <remap from="cmd_vel_out" to="/RosAria/cmd_vel" unless="$(arg simulation)"/>
       <remap from="cmd_vel_out" to="cmd_vel" if="$(arg simulation)"/>
     </node>
+    <include file="$(find hratc2017_entry)/launch/map_controller.launch"/>
     <!--node name="convert_odom" pkg="convert_odom" type="convert_odom"/-->
   </group>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">

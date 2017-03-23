@@ -37,7 +37,7 @@ MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg, std::str
   if (type == RELATIVE_MAP_COORDINATE_TYPE)
   {
     double x_size(std::abs(left_top_corner_.x - right_top_corner_.x));
-    double y_size(std::abs(left_bottom_corner_.x - right_bottom_corner_.x));
+    double y_size(std::abs(left_bottom_corner_.y - left_top_corner_.y));
     left_bottom_corner_.x = -1 * x_size / 2 + map_coverage_margin_;
     left_bottom_corner_.y = -1 * y_size / 2 + map_coverage_margin_;
     left_bottom_corner_.z = 0;

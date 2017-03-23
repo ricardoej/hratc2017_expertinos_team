@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="map_controller" pkg="hratc2017_entry" type="map_controller_node" output="screen" />
+</launch>
