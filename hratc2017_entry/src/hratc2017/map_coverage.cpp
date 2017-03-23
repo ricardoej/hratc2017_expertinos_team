@@ -141,9 +141,9 @@ void MapCoverage::generateWaypoints()
 {
   clear();
 
-  double current_offset = map_coverage_margin_;
+  double current_offset = map_coverage_offset_;
 
-  while (current_offset > map_coverage_offset_)
+  while (current_offset < map_coverage_margin_)
   {
     for (std::list<geometry_msgs::Point>::const_iterator ci = corners_.begin(); ci != corners_.end(); ++ci)
     {
@@ -158,7 +158,7 @@ void MapCoverage::generateWaypoints()
     point.y = corners_.front().y * current_offset;
     waypoints_.push_back(point);
 
-    current_offset -= map_coverage_offset_;
+    current_offset += map_coverage_offset_;
   }
 }
 

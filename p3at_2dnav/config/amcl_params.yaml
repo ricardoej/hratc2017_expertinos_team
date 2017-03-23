@@ -1,6 +1,6 @@
 # Initial pose
-initial_pose_x: 4.5
-initial_pose_y: 4.5
+initial_pose_x: 0
+initial_pose_y: 0
 initial_pose_a: -1.5708
 # Publish scans from best pose at a max of 10 Hz
 odom_model_type: 'diff'
