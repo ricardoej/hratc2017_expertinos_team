@@ -48,6 +48,8 @@ LandmineAnalyzer::LandmineAnalyzer(ros::NodeHandle* nh)
       nh->advertise<metal_detector_msgs::Coil>("/coils/filtered", 10);
   moving_away_sub_ = nh->subscribe("moving_away", 1,
                                    &LandmineAnalyzer::movingAwayCallback, this);
+  known_mine_sub_ = nh->subscribe("known_mine", 1,
+                                  &LandmineAnalyzer::knownMineCallback, this);
   reset();
 }
 
@@ -69,10 +71,7 @@ LandmineAnalyzer::~LandmineAnalyzer()
  * @brief LandmineAnalyzer::isSettedUp
  * @return
  */
-bool LandmineAnalyzer::isSettedUp()
-{
-  return coils_.isSettedUp();
-}
+bool LandmineAnalyzer::isSettedUp() { return coils_.isSettedUp(); }
 
 /**
  * @brief LandmineAnalyzer::controlLoop
@@ -236,7 +235,7 @@ void LandmineAnalyzer::derivativeCallback(const ros::TimerEvent& event)
   // ROS_INFO("derived value: %lf", derivative);
   if (sampling_ && !moving_away_ && derivative < 0.0)
   {
-    //ROS_WARN("Negative derived value!!");
+    // ROS_WARN("Negative derived value!!");
     /*
     publishFakeLandminePose();
     reset();*/
@@ -254,6 +253,15 @@ void LandmineAnalyzer::movingAwayCallback(const std_msgs::Bool::ConstPtr& msg)
     moving_away_ = msg->data;
     ROS_INFO("   moving away: %s", moving_away_ ? "true" : "false");
   }
+}
+
+/**
+ * @brief LandmineAnalyzer::knownMineCallback
+ * @param msg
+ */
+void LandmineAnalyzer::knownMineCallback(const std_msgs::Bool::ConstPtr& msg)
+{
+  known_mine_ = msg->data;
 }
 
 /**

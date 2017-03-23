@@ -29,10 +29,15 @@ public:
                       double angular_tolerance = ANGULAR_TOLERANCE);
   virtual ~DisplacementMonitor();
   bool isSettedUp() const;
+  bool isGoalSetted() const;
   bool goalAchieved() const;
+  double getCurrX() const;
+  double getCurrY() const;
+  double getCurrPhi() const;
   double getDispX() const;
   double getDispY() const;
   double getDispPhi() const;
+  void setGoal(double x, double phi = 0.0);
   void setGoal(double x, double y, double phi);
   void setLinearTolerance(double tol);
   void setAngularTolerance(double tol);
@@ -41,6 +46,7 @@ public:
 private:
   ros::Subscriber odom_sub_;
   bool setted_up_;
+  bool goal_setted_;
   double start_x_, start_y_, start_phi_;
   double curr_x_, curr_y_, curr_phi_, prev_phi_;
   double disp_x_, disp_y_, disp_phi_;

@@ -33,6 +33,9 @@
 #define ROTATION_TIME 2.0
 #define MOVING_AWAY_TIME 3.0
 #define STANDARD_RADIUS 0.5
+#define S5_MOVING_BACK_X -0.15
+#define S6_CHANGING_DIRECTION_PHI M_PI_2
+#define S7_MOVING_AWAY_X 0.15
 
 namespace hratc2017
 {
@@ -42,11 +45,12 @@ enum StateEnum
 {
   S0_SETTING_UP,
   S1_ALIGNING,
-  S2_SCANNING,
+  S2_SCANNING_FORWARD,
   S3_HOLDING_ON,
-  S4_MOVING_BACK,
-  S5_CHANGING_DIRECTION,
-  S6_MOVING_AWAY
+  S4_SCANNING_BACK,
+  S5_MOVING_BACK,
+  S6_CHANGING_DIRECTION,
+  S7_MOVING_AWAY
 };
 }
 
@@ -82,9 +86,6 @@ private:
   double min_coil_signal_;
   double max_coil_signal_;
   double pause_time_;
-  double safe_time_;
-  double rotation_time_;
-  double moving_away_time_;
   double std_radius_;
   bool scanning_;
   bool moving_away_;
