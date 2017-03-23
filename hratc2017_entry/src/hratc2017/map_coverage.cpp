@@ -20,59 +20,22 @@ namespace hratc2017
  * @param msg
  * @param type
  */
-MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg, std::string type,
-         double map_coverage_offset, double map_coverage_margin, double landmine_radius_area)
+MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg,
+  double map_coverage_offset, double map_coverage_margin, double landmine_radius_area)
     : map_coverage_offset_(map_coverage_offset),
       map_coverage_margin_(map_coverage_margin),
       landmine_radius_area_(landmine_radius_area)
 {
-  if (msg->markers.size() != 4)
+  if (msg->markers.size() < 3)
   {
-    throw utilities::Exception("Map must have four corners!!!");
+    throw utilities::Exception("Map must have at least three corners!!!");
   }
-  left_bottom_corner_ = msg->markers[0].pose.position;
-  right_bottom_corner_ = msg->markers[1].pose.position;
-  right_top_corner_ = msg->markers[2].pose.position;
-  left_top_corner_ = msg->markers[3].pose.position;
-  if (type == RELATIVE_MAP_COORDINATE_TYPE)
-  {
-    double x_size(std::abs(left_top_corner_.x - right_top_corner_.x));
-    double y_size(std::abs(left_bottom_corner_.y - left_top_corner_.y));
-    left_bottom_corner_.x = -1 * x_size / 2 + map_coverage_margin_;
-    left_bottom_corner_.y = -1 * y_size / 2 + map_coverage_margin_;
-    left_bottom_corner_.z = 0;
-    left_top_corner_.x = -1 * x_size / 2 + map_coverage_margin_;
-    left_top_corner_.y = y_size / 2 - map_coverage_margin_;
-    left_top_corner_.z = 0;
-    right_top_corner_.x = x_size / 2 - map_coverage_margin_;
-    right_top_corner_.y = y_size / 2 - map_coverage_margin_;
-    right_top_corner_.z = 0;
-    right_bottom_corner_.x = x_size / 2 - map_coverage_margin_;
-    right_bottom_corner_.y = -1 * y_size / 2 + map_coverage_margin_;
-    right_bottom_corner_.z = 0;
-  }
-  generateWaypoints();
-}
 
-/**
- * @brief MapCoverage::MapCoverage
- * @param left_bottom_corner
- * @param left_top_corner
- * @param right_top_corner
- * @param right_bottom_corner
- */
-MapCoverage::MapCoverage(geometry_msgs::Point left_bottom_corner,
-         geometry_msgs::Point left_top_corner,
-         geometry_msgs::Point right_top_corner,
-         geometry_msgs::Point right_bottom_corner, double map_coverage_offset,
-         double map_coverage_margin, double landmine_radius_area)
-    : map_coverage_offset_(map_coverage_offset),
-      map_coverage_margin_(map_coverage_margin),
-      left_bottom_corner_(left_bottom_corner),
-      left_top_corner_(left_top_corner), right_top_corner_(right_top_corner),
-      right_bottom_corner_(right_bottom_corner),
-      landmine_radius_area_(landmine_radius_area)
-{
+  for (int i = 0; i < msg->markers.size(); ++i)
+  {
+    corners_.push_front(msg->markers[i].pose.position);
+  }
+
   generateWaypoints();
 }
 
@@ -141,13 +104,12 @@ void MapCoverage::pop() { waypoints_.pop_front(); }
 std::string MapCoverage::str() const
 {
   std::stringstream ss;
-  ss << "left bottom: (" << left_bottom_corner_.x << ", "
-     << left_bottom_corner_.y;
-  ss << "), left top: (" << left_top_corner_.x << ", " << left_top_corner_.y;
-  ss << "), right bottom: (" << right_bottom_corner_.x << ", "
-     << right_bottom_corner_.y;
-  ss << "), right top: (" << right_top_corner_.x << ", " << right_top_corner_.y;
-  ss << "), waypoints: ";
+  ss << "Map\n";
+  for (std::list<geometry_msgs::Point>::const_iterator ci = corners_.begin(); ci != corners_.end(); ++ci)
+  {
+    ss << "(" << ci->x << ", " << ci->y << "), ";
+  }
+  ss << "\nWaypoints:\n";
   ss << waypoints_str();
   return ss.str();
 }
@@ -161,7 +123,7 @@ std::string MapCoverage::waypoints_str() const
   std::ostringstream ss;
   for (std::list<geometry_msgs::Point>::const_iterator ci = waypoints_.begin(); ci != waypoints_.end(); ++ci)
   {
-    ss << " (" << ci->x << ", " << ci->y << ")";
+    ss << "(" << ci->x << ", " << ci->y << "), ";
   }
   return ss.str(); 
 }
@@ -178,78 +140,25 @@ const char* MapCoverage::c_str() const { return str().c_str(); }
 void MapCoverage::generateWaypoints()
 {
   clear();
-  generateWaypoints(left_bottom_corner_, right_top_corner_, "horizontal");
-  generateWaypoints(right_top_corner_, left_bottom_corner_, "vertical");
-  generateWaypoints(left_bottom_corner_, right_top_corner_, "horizontal");
-  generateWaypoints(right_top_corner_, left_bottom_corner_, "vertical");
-}
 
-/**
- * @brief MapCoverage::generateWaypoints generates the waypoint/map coverage strategy
- */
-void MapCoverage::generateWaypoints(geometry_msgs::Point start_position, geometry_msgs::Point end_position, std::string type)
-{
-  geometry_msgs::Point current_waypoint(start_position);
+  double current_offset = map_coverage_margin_;
 
-  bool is_finished = false;
-
-  while (!is_finished)
+  while (current_offset > map_coverage_offset_)
   {
-    waypoints_.push_back(current_waypoint);
-
-    if (type == "horizontal")
+    for (std::list<geometry_msgs::Point>::const_iterator ci = corners_.begin(); ci != corners_.end(); ++ci)
     {
-      current_waypoint.y = current_waypoint.y == left_bottom_corner_.y
-                             ? left_top_corner_.y
-                             : left_bottom_corner_.y;
-    }
-    else if (type == "vertical")
-    {
-      current_waypoint.x = current_waypoint.x == right_bottom_corner_.x
-                             ? left_bottom_corner_.x
-                             : right_bottom_corner_.x;  
+      geometry_msgs::Point point;
+      point.x = ci->x * current_offset;
+      point.y = ci->y * current_offset;
+      waypoints_.push_back(point);
     }
 
-    waypoints_.push_back(current_waypoint);
+    geometry_msgs::Point point;
+    point.x = corners_.front().x * current_offset;
+    point.y = corners_.front().y * current_offset;
+    waypoints_.push_back(point);
 
-    if (type == "horizontal")
-    {
-      if (start_position.x < end_position.x)
-      {
-        is_finished = (current_waypoint.x + map_coverage_offset_) > end_position.x
-          && abs((current_waypoint.x + map_coverage_offset_) - end_position.x) > 0.05;
-        current_waypoint.x = (current_waypoint.x + map_coverage_offset_) < end_position.x
-                              ? current_waypoint.x + map_coverage_offset_
-                              : end_position.x;
-      }
-      else
-      {
-        is_finished = (current_waypoint.x - map_coverage_offset_) < end_position.x
-          && abs((current_waypoint.x - map_coverage_offset_) - end_position.x) > 0.05;
-        current_waypoint.x = (current_waypoint.x - map_coverage_offset_) > end_position.x
-                              ? current_waypoint.x - map_coverage_offset_
-                              : end_position.x;
-      }
-    }
-    else if (type == "vertical")
-    {
-      if (start_position.y < end_position.y)
-      {
-        is_finished = (current_waypoint.y + map_coverage_offset_) > end_position.y
-          && abs((current_waypoint.y + map_coverage_offset_) - end_position.y) > 0.05;
-        current_waypoint.y = (current_waypoint.y + map_coverage_offset_) < end_position.y
-                              ? current_waypoint.y + map_coverage_offset_
-                              : end_position.y;
-      }
-      else
-      {
-        is_finished = (current_waypoint.y - map_coverage_offset_) < end_position.y
-          && abs((current_waypoint.y - map_coverage_offset_) - end_position.y) > 0.05;
-        current_waypoint.y = (current_waypoint.y - map_coverage_offset_) > end_position.y
-                              ? current_waypoint.y - map_coverage_offset_
-                              : end_position.y;
-      }
-    }
+    current_offset -= map_coverage_offset_;
   }
 }
 
