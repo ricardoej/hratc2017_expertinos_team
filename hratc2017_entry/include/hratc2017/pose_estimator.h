@@ -29,9 +29,11 @@ namespace states{
 
 enum StateEnum
 {
+  S0_STOPPED,
   S1_READING1,
   S2_MOVING,
   S3_READING2,
+  S4_FINISHED
 };
 }
 
@@ -44,7 +46,7 @@ public:
   virtual ~PoseEstimator();
 
 private:
-  bool initial_pose_sent_;
+  bool pose_estimated_sent_;
   bool has_utm_reading1_;
   bool has_utm_reading2_;
   bool isMoving_;
@@ -56,7 +58,7 @@ private:
   ros::Subscriber gps_odom_sub_;
   ros::Subscriber odom_p3at_sub_;
   ros::Publisher cmd_vel_pub_;
-  ros::Publisher initial_orientation_pub_;
+  ros::Publisher pose_estimated_pub_;
   double centerX_;
   double centerY_;
   StateEnum current_state_;
