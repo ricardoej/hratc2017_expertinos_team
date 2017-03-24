@@ -334,26 +334,26 @@ void Coils::setParameters(const ros::NodeHandle& pnh)
 {
   double aux;
   pnh.param("max_pose_update_interval", aux, DEFAULT_MAX_POSE_UPDATE_INTERVAL);
-  ROS_INFO("   Maximun pose update interval: %f", aux);
+  //ROS_INFO("   Maximun pose update interval: %f", aux);
   setMaxPoseUpdateInterval(aux);
   pnh.param("derivative_sample_time", aux, DEFAULT_DERIVATIVE_SAMPLE_TIME);
-  ROS_INFO("   Derivative sample time: %f", aux);
+  //ROS_INFO("   Derivative sample time: %f", aux);
   setSampleTime(aux);
   pnh.param("low_coil_signal_threshold", aux,
             DEFAULT_LOW_COIL_SIGNAL_THRESHOLD);
-  ROS_INFO("   Low coil signal threshold: %f", aux);
+  //ROS_INFO("   Low coil signal threshold: %f", aux);
   setLowThreshold(aux);
   pnh.param("high_coil_signal_threshold", aux,
             DEFAULT_HIGH_COIL_SIGNAL_THRESHOLD);
-  ROS_INFO("   High coil signal threshold: %f", aux);
+  //ROS_INFO("   High coil signal threshold: %f", aux);
   setHighThreshold(aux);
   int number;
   pnh.param("coil_signal_filter_number_of_observations", number,
             DEFAULT_COIL_SIGNAL_FILTER_NUMBER_OF_OBSERVATIONS);
-  ROS_INFO("   Coil signal filter number of observations: %d", number);
+  //ROS_INFO("   Coil signal filter number of observations: %d", number);
   setNumberOfObservations(number);
   pnh.param("number_of_derivatives", number, DEFAULT_NUMBER_OF_DERIVATIVES);
-  ROS_INFO("   Number of derivatives: %d", number);
+  //ROS_INFO("   Number of derivatives: %d", number);
   setNumberOfDerivatives(number);
 }
 

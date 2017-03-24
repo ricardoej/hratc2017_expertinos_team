@@ -1,5 +1,0 @@
-<launch>
-  <node pkg="amcl" type="amcl" name="amcl">
-    <rosparam file="$(find p3at_2dnav)/config/amcl_params.yaml" command="load" />
-  </node>
-</launch>

@@ -90,7 +90,11 @@ void ROSNode::shutdown(std::string message) const
 /**
  * @brief ROSNode::reset
  */
-void ROSNode::reset() { ROS_INFO("   Resetting %s!!!", name_.c_str()); }
+void ROSNode::reset()
+{
+  ROS_INFO("   Resetting %s!!!", name_.c_str());
+  setParameters();
+}
 
 /**
  * @brief ROSNode::isSetted
@@ -120,4 +124,9 @@ std::string ROSNode::getName() const { return name_; }
  * @return if this ROS node controller is still running properly.
  */
 bool ROSNode::ok() const { return nh_->ok(); }
+
+/**
+ * @brief ROSNode::setParameters
+ */
+void ROSNode::setParameters() {}
 }

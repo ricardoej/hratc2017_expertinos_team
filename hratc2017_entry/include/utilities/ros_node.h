@@ -40,6 +40,7 @@ private:
   virtual bool isSettedUp();
   virtual void init();
   virtual void controlLoop() = 0;
+  virtual void setParameters();
 };
 }
 

@@ -1,13 +1,15 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="simulation" default="false"/>
+  <arg name="arena" default="real_arena"/>
+  <arg name="record_bag" default="false"/>
+  <arg name="simulation" default="true"/>
   <arg name="plot" default="true"/>
   <arg name="robot" default="p3at"/>
   <arg name="rviz" default="true"/>
   <group ns="$(arg robot)">
     <include file="$(find hratc2017_entry)/launch/landmine_analyzer.launch">
-      <arg name ="plot" value="$(arg plot)"/>
-      <arg name ="simulation" value="$(arg simulation)"/>
+      <arg name="plot" value="$(arg plot)"/>
+      <arg name="simulation" value="$(arg simulation)"/>
     </include>
     <include file="$(find hratc2017_entry)/launch/metal_scanner.launch">
       <arg name ="simulation" value="$(arg simulation)"/>
@@ -20,11 +22,10 @@
       <remap from="cmd_vel_out" to="cmd_vel" if="$(arg simulation)"/>
     </node>
     <include file="$(find hratc2017_entry)/launch/map_controller.launch"/>
-    <!--node name="convert_odom" pkg="convert_odom" type="convert_odom"/-->
   </group>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
-    <arg name ="rviz" value="$(arg rviz)"/>
-    <arg name ="simulation" value="$(arg simulation)"/>
+    <arg name="arena" value="$(arg arena)"/>
+    <arg name="rviz" value="$(arg rviz)"/>
   </include>
-  <node pkg="rosbag" type="record" name="rosbag_expertinos" args="-o $(find hratc2017_entry)/expertinos_bag -a" unless="$(arg simulation)"/>
+  <node pkg="rosbag" type="record" name="rosbag_expertinos" args="-o $(find hratc2017_entry)/expertinos_bag -a" if="$(arg record_bag)"/>
 </launch>

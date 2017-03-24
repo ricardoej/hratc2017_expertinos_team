@@ -1,0 +1,7 @@
+linear_velocity_x: 0.25
+angular_velocity_z: 0.75
+angle: deg(30)
+inner_minor_radius: 0.45
+inner_major_radius: 0.725
+outer_minor_radius: 0.55
+outer_major_radius: 0.825

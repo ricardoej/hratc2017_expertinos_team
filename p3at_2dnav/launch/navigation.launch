@@ -1,10 +1,7 @@
 <launch>
+  <arg name="arena" default="real_arena"/>
   <arg name="rviz" default="true"/>
-  <arg name="simulation" default="false"/>
-  <include file="$(find p3at_2dnav)/launch/slam.launch" unless="$(arg simulation)"/>
-  <!--<include file="$(find p3at_2dnav)/launch/amcl.launch" if="$(arg simulation)"/>-->
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/map.yaml" if="$(arg simulation)"/>
-  <include file="$(find p3at_2dnav)/launch/move_base.launch" if="$(arg simulation)"/>
-  <include file="$(find p3at_2dnav)/launch/move_base_2f.launch" unless="$(arg simulation)"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/$(arg arena).yaml"/>
+  <include file="$(find p3at_2dnav)/launch/move_base.launch"/>
   <node name="rviz_navigation" pkg="rviz" respawn="false" type="rviz" args="-d $(find p3at_2dnav)/config/navigation.rviz" if="$(arg rviz)"/>
 </launch>

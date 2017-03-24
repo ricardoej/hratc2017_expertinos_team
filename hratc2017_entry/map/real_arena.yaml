@@ -1,4 +1,4 @@
-image: map.pgm
+image: real_arena.pgm
 resolution: 0.050000
 origin: [-11.520281, -2.232711, 0]
 negate: 0
