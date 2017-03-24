@@ -56,7 +56,7 @@ private:
   bool has_imu_initial_;
   bool has_odom_initial_;
   bool isMoving_;
-  //ros::Time timer_;
+  ros::Time timer_;
   //utilities::MeanFilter mean_filter_;
   geometry_msgs::PoseWithCovarianceStamped p1_;
   geometry_msgs::PoseWithCovarianceStamped p2_;

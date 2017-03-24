@@ -117,8 +117,9 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
       ROS_INFO("starting moving");
       setVelocity(0.5, 0);
       isMoving_ = true;
+      timer_ = ros::Time::now();
     }
-    if(odom_p3at_.pose.pose.position.x > 1){
+    if((ros::Time::now() - timer_).toSec() > 2){
       ROS_INFO("stopped moving");
       setVelocity(0, 0);
       current_state_ = states::S3_READING2;
@@ -144,8 +145,7 @@ void PoseEstimator::odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg){
   }
 
   odom_p3at_.pose.pose.position.x = msg->pose.pose.position.x - odom_initial_.pose.pose.position.x;
-
-
+  //std::cout << "Valor odom x = " << odom_initial_.pose.pose.position.x << std::endl;
 
 }
 
@@ -160,7 +160,7 @@ void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg){
     quat_initial_.setW(msg->orientation.w);
 
     yaw_initial_ = tf::getYaw(quat_initial_);
-    std::cout << "yaw initial: " << yaw_initial_ << std::endl;
+    //std::cout << "yaw initial: " << yaw_initial_ << std::endl;
   }
   imu_data_ = *msg;
   quat_data_.setX(msg->orientation.x);
@@ -168,7 +168,7 @@ void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg){
   quat_data_.setZ(msg->orientation.z);
   quat_data_.setW(msg->orientation.w);
   yaw_data_ = tf::getYaw(quat_data_);
-  std::cout << "yaw data: " << yaw_data_ << std::endl;
+ // std::cout << "yaw data: " << yaw_data_ << std::endl;
 }
 
 
