@@ -28,12 +28,13 @@ PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
   pnh.param("centerY", centerY_, CENTER_Y);
   ROS_INFO("   center Y: %f", centerY_);
 
-  gps_odom_sub_ = nh->subscribe("/gps/odom", 100, &PoseEstimator::gpsOdomCallback, this);
-  odom_p3at_sub_ = nh->subscribe("/p3at/odom", 100, &PoseEstimator::odomP3atCallback, this);
+  gps_odom_sub_ = nh->subscribe("gps/odom", 100, &PoseEstimator::gpsOdomCallback, this);
+  odom_p3at_sub_ = nh->subscribe("p3at/odom", 100, &PoseEstimator::odomP3atCallback, this);
   //odom_p3at_sub_ = nh->subscribe("/RosAria/pose", 100, &PoseEstimator::odomP3atCallback, this);
   imu_sub_ = nh->subscribe("imu/data", 100, &PoseEstimator::imuCallback, this);
   initial_pose_sub_ = nh->subscribe("initialpose", 100, &PoseEstimator::initialPoseCallback, this);
-  pose_estimated_pub_ = nh->advertise<geometry_msgs::PoseWithCovarianceStamped>("/poseEstimated", 100, true);
+
+  pose_estimated_pub_ = nh->advertise<nav_msgs::Odometry>("odom_w_offset", 100, true);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("p3at/cmd_vel", 100, true);
   //cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("RosAria/cmd_vel", 100, true);
   imu_pub_ = nh->advertise<sensor_msgs::Imu>("imu_w_offset", 100, true);
@@ -48,6 +49,8 @@ PoseEstimator::~PoseEstimator()
   cmd_vel_pub_.shutdown();
   pose_estimated_pub_.shutdown();
   odom_p3at_sub_.shutdown();
+  imu_sub_.shutdown();
+  initial_pose_sub_.shutdown();
 }
 
 /**
@@ -71,7 +74,7 @@ void PoseEstimator::controlLoop()
       current_state_ = states::S4_FINISHED;
       //get angle z by atan
       p2_.pose.pose.position.z = atan2((p2_.pose.pose.position.y - p1_.pose.pose.position.y) , (p2_.pose.pose.position.x - p1_.pose.pose.position.x));
-      pose_estimated_pub_.publish(p2_);
+      //pose_estimated_pub_.publish(p2_);
       pose_estimated_sent_ = true;
       ROS_INFO("p1 - (%f,%f)", p1_.pose.pose.position.x, p1_.pose.pose.position.y);
       ROS_INFO("p2 - (%f,%f)", p2_.pose.pose.position.x, p2_.pose.pose.position.y);
@@ -89,6 +92,16 @@ void PoseEstimator::controlLoop()
 
     imu_pub_.publish(imu_ekf_);
   }
+
+  // Calculate position estimate with offset and initial odom.
+  // Position_estimate[t] = position[t] + initialpose - position[0]
+
+  odom_w_offset_ = odom_p3at_;
+  odom_w_offset_.pose.pose.position.x += p1_.pose.pose.position.x - odom_initial_.pose.pose.position.x;
+  odom_w_offset_.pose.pose.position.y += p1_.pose.pose.position.y - odom_initial_.pose.pose.position.y;
+
+  pose_estimated_pub_.publish(odom_w_offset_);
+
 }
 
 /**
@@ -141,12 +154,12 @@ void PoseEstimator::odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg){
   if(!has_odom_initial_)
   {
     odom_initial_.pose.pose.position.x = msg->pose.pose.position.x;
+    odom_initial_.pose.pose.position.y = msg->pose.pose.position.y;
     has_odom_initial_ = true;
   }
 
-  odom_p3at_.pose.pose.position.x = msg->pose.pose.position.x - odom_initial_.pose.pose.position.x;
+  odom_p3at_ = *msg;
   //std::cout << "Valor odom x = " << odom_initial_.pose.pose.position.x << std::endl;
-
 }
 
 void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg){
@@ -173,7 +186,7 @@ void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg){
 
 
 void PoseEstimator::initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg){
-
+  initial_pose_ = *msg;
 
 }
 

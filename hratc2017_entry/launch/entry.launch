@@ -23,6 +23,7 @@
     </node>
     <include file="$(find hratc2017_entry)/launch/map_controller.launch"/>
   </group>
+  <include file="$(find hratc2017_entry)/launch/pose_estimator.launch"/>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
     <arg name="arena" value="$(arg arena)"/>
     <arg name="rviz" value="$(arg rviz)"/>

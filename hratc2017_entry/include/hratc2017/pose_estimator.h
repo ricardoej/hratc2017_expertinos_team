@@ -57,24 +57,35 @@ private:
   bool has_odom_initial_;
   bool isMoving_;
   ros::Time timer_;
+
   //utilities::MeanFilter mean_filter_;
   geometry_msgs::PoseWithCovarianceStamped p1_;
   geometry_msgs::PoseWithCovarianceStamped p2_;
+
   tf::Quaternion quat_initial_;
   tf::Quaternion quat_data_;
   tf::Quaternion quat_ekf_;
+
   sensor_msgs::Imu imu_data_;
   sensor_msgs::Imu imu_initial_;
   sensor_msgs::Imu imu_ekf_;
+
   nav_msgs::Odometry utm_reading1_;
   nav_msgs::Odometry utm_reading2_;
+
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
+  nav_msgs::Odometry odom_w_offset_;
+  geometry_msgs::PoseWithCovarianceStamped initial_pose_;
+
   ros::Subscriber gps_odom_sub_;
   ros::Subscriber odom_p3at_sub_;
   ros::Subscriber imu_sub_;
   ros::Subscriber initial_pose_sub_;
+  ros::Subscriber odom_data_sub_;
+  ros::Subscriber odom_initial_sub_;
   ros::Publisher imu_pub_;
+  ros::Publisher odom_offset_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher pose_estimated_pub_;
   double centerX_;
