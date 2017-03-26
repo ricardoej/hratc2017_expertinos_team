@@ -1,7 +1,5 @@
 <launch>
-  <arg name="arena" default="real_arena"/>
   <arg name="rviz" default="true"/>
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/$(arg arena).yaml"/>
   <include file="$(find p3at_2dnav)/launch/move_base.launch"/>
   <node name="rviz_navigation" pkg="rviz" respawn="false" type="rviz" args="-d $(find p3at_2dnav)/config/navigation.rviz" if="$(arg rviz)"/>
 </launch>

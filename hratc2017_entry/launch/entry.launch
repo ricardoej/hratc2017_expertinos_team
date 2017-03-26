@@ -21,12 +21,14 @@
       <remap from="cmd_vel_out" to="/RosAria/cmd_vel" unless="$(arg simulation)"/>
       <remap from="cmd_vel_out" to="cmd_vel" if="$(arg simulation)"/>
     </node>
-    <include file="$(find hratc2017_entry)/launch/map_controller.launch"/>
   </group>
-  <include file="$(find hratc2017_entry)/launch/pose_estimator.launch"/>
+  <include file="$(find hratc2017_entry)/launch/pose_estimator.launch">
+    <arg name="robot" value="p3at"/>
+    <arg name="simulation" value="$(arg simulation)"/>
+  </include>
   <include file="$(find p3at_2dnav)/launch/navigation.launch">
-    <arg name="arena" value="$(arg arena)"/>
     <arg name="rviz" value="$(arg rviz)"/>
   </include>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/$(arg arena).yaml"/>
   <node pkg="rosbag" type="record" name="rosbag_expertinos" args="-o $(find hratc2017_entry)/expertinos_bag -a" if="$(arg record_bag)"/>
 </launch>

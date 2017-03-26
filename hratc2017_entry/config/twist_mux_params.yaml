@@ -29,5 +29,5 @@ locks:
 -
   name    : avoiding_obstacle
   topic   : avoiding_obstacle
-  timeout : 0.25
+  timeout : 0.0
   priority: 80

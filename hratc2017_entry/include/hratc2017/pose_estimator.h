@@ -9,27 +9,26 @@
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
-#ifndef _HRATC2017_ENTRIES_MAP_CONTROLLER_H_
-#define _HRATC2017_ENTRIES_MAP_CONTROLLER_H_
+#ifndef _HRATC2017_ENTRIES_POSE_ESTIMATOR_H_
+#define _HRATC2017_ENTRIES_POSE_ESTIMATOR_H_
 
-#include <ros/ros.h>
-#include "utilities/ros_node.h"
-#include <nav_msgs/Odometry.h>
+#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <utilities/mean_filter.h>
-#include "tf/tf.h"
-#include <tf/transform_datatypes.h>
+#include "utilities/mean_filter.h"
+#include "utilities/ros_node.h"
 
 #define CENTER_X 483238.6184840562
 #define CENTER_Y 6674530.097688958
 
-
 namespace hratc2017
 {
 
-namespace states{
+namespace states
+{
 
 enum StateEnum
 {
@@ -58,7 +57,7 @@ private:
   bool isMoving_;
   ros::Time timer_;
 
-  //utilities::MeanFilter mean_filter_;
+  // utilities::MeanFilter mean_filter_;
   geometry_msgs::PoseWithCovarianceStamped p1_;
   geometry_msgs::PoseWithCovarianceStamped p2_;
 
@@ -96,15 +95,14 @@ private:
   StateEnum current_state_;
   virtual void controlLoop();
   void gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
-  void odomP3atCallback(const nav_msgs::Odometry::ConstPtr &msg);
+  void odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-  void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
+  void initialPoseCallback(
+      const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
   void setNextStage();
   void setVelocity(double vx, double wz);
-
-
 };
 }
 
-#endif /* _HRATC2017_ENTRIES_MAP_CONTROLLER_H_ */
+#endif /* _HRATC2017_ENTRIES_POSE_ESTIMATOR_H_ */

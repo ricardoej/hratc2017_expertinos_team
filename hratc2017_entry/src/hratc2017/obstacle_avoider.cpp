@@ -71,23 +71,35 @@ void ObstacleAvoider::controlLoop()
   {
     return;
   }
+  bool avoiding(false);
   double scale, vx, wz;
-  for (int i(0); i <= cloud_.points.size(); i++)
+  double x(0.0), y(0.0);
+  for (int i(0); i < cloud_.points.size(); i++)
   {
     if (isInsideOuterEllipse(cloud_.points[i]))
     {
-      setAvoiding(true);
+      avoiding = true;
       scale = !isInsideInnerEllipse(cloud_.points[i])
                   ? fabs(i - center_index_) / angle_index_size_
                   : 0;
-      vx = scale * vx_;
-      wz = (i < center_index_ ? 1 : -1) * (1 - scale) * wz_;
-      /// na verdade tem que fazer alguma decomposicao vetorial aqui.
+      x += (1 - scale) * cloud_.points[i].x;
+      y += (1 - scale) * cloud_.points[i].y;
     }
   }
-  if (avoiding_)
+  if (avoiding)
   {
+    setAvoiding(true);
+    double theta(atan2(y, x)); //, r(sqrt(pow(x, 2) + pow(y, 2)));
+    scale = fabs(theta) / angle_;
+    ROS_INFO("theta: %lf, scale: %lf", theta * 180 / M_PI, scale);
+    vx = scale * vx_;
+    wz = (theta < 0.0 ? 1 : -1) * (1 - scale) * wz_;
     setVelocity(vx, wz);
+    ROS_INFO("vx: %lf, wz: %lf", vx, wz);
+  }
+  else if (avoiding != avoiding_)
+  {
+    setAvoiding(false);
   }
   publishMarkers();
 }
@@ -185,9 +197,7 @@ void ObstacleAvoider::reset()
 bool ObstacleAvoider::isInsideInnerEllipse(geometry_msgs::Point32 p) const
 {
   return sqrt(pow(p.x / inner_major_radius_, 2) +
-              pow(p.y / inner_minor_radius_, 2)) -
-             1 <
-         0;
+              pow(p.y / inner_minor_radius_, 2)) < 1;
 }
 
 /**
@@ -198,9 +208,7 @@ bool ObstacleAvoider::isInsideInnerEllipse(geometry_msgs::Point32 p) const
 bool ObstacleAvoider::isInsideOuterEllipse(geometry_msgs::Point32 p) const
 {
   return sqrt(pow(p.x / outer_major_radius_, 2) +
-              pow(p.y / outer_minor_radius_, 2)) -
-             1 <
-         0;
+              pow(p.y / outer_minor_radius_, 2)) < 1;
 }
 
 /**
