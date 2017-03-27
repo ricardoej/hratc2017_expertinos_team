@@ -2,7 +2,7 @@
 <launch>
   <arg name="arena" default="real_arena"/>
   <arg name="record_bag" default="false"/>
-  <arg name="simulation" default="true"/>
+  <arg name="simulation" default="false"/>
   <arg name="plot" default="true"/>
   <arg name="robot" default="p3at"/>
   <arg name="rviz" default="true"/>

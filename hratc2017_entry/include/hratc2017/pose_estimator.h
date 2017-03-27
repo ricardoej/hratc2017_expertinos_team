@@ -57,7 +57,9 @@ private:
   bool has_imu_initial_;
   bool has_odom_initial_;
   bool isMoving_;
+  bool wating_;
   ros::Time timer_;
+  ros::Time last_timestamp_;
 
   // utilities::MeanFilter mean_filter_;
   geometry_msgs::PoseWithCovarianceStamped p1_;
@@ -71,14 +73,13 @@ private:
   sensor_msgs::Imu imu_initial_;
   sensor_msgs::Imu imu_ekf_;
 
-  nav_msgs::Odometry utm_reading1_;
-  nav_msgs::Odometry utm_reading2_;
+  nav_msgs::Odometry utm_read1_;
+  nav_msgs::Odometry utm_read2_;
 
 //  nav_msgs::Odometry gps_odom_;
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
   nav_msgs::Odometry odom_w_offset_;
-  geometry_msgs::PoseWithCovarianceStamped initial_pose_;
 
   ros::Subscriber gps_odom_sub_;
   ros::Subscriber odom_p3at_sub_;
@@ -107,7 +108,6 @@ private:
   void odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-  void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
   void calcPoseEstimated();
   void sendImuEkf();
   void sendOdomWithOffset();

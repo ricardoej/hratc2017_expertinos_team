@@ -30,17 +30,12 @@ PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
   ROS_INFO("   center X: %f", centerX_);
   pnh.param("centerY", centerY_, CENTER_Y);
   ROS_INFO("   center Y: %f", centerY_);
-  gps_odom_sub_ =
-      nh->subscribe("/gps/odom", 100, &PoseEstimator::gpsOdomCallback, this);
-  odom_p3at_sub_ =
-      nh->subscribe("odom", 100, &PoseEstimator::odomP3atCallback, this);
-  imu_sub_ = nh->subscribe("/imu/data", 100, &PoseEstimator::imuCallback, this);
-  initial_pose_sub_ = nh->subscribe("/initialpose", 100,
-                                    &PoseEstimator::initialPoseCallback, this);
-  pose_estimated_pub_ =
-      nh->advertise<nav_msgs::Odometry>("/odom_w_offset", 100, true);
-  cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 100, true);
-  imu_pub_ = nh->advertise<sensor_msgs::Imu>("/imu_w_offset", 100, true);
+  gps_odom_sub_ = nh->subscribe("/gps/odom", 1, &PoseEstimator::gpsOdomCallback, this);
+  odom_p3at_sub_ = nh->subscribe("odom", 1, &PoseEstimator::odomP3atCallback, this);
+  imu_sub_ = nh->subscribe("/imu/data", 1, &PoseEstimator::imuCallback, this);
+  pose_estimated_pub_ = nh->advertise<nav_msgs::Odometry>("/odom_w_offset", 10, true);
+  cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1, true);
+  imu_pub_ = nh->advertise<sensor_msgs::Imu>("/imu_w_offset", 10, true);
 }
 
 /**
@@ -53,7 +48,6 @@ PoseEstimator::~PoseEstimator()
   pose_estimated_pub_.shutdown();
   odom_p3at_sub_.shutdown();
   imu_sub_.shutdown();
-  initial_pose_sub_.shutdown();
 }
 
 /**
@@ -82,16 +76,18 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   {
   case states::S1_READING1:
     if(reading_count_< NUMBER_OF_SAMPLES){
-      mean_filter_x_->add(msg->pose.pose.position.x);
-      mean_filter_y_->add(msg->pose.pose.position.y);
-      std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
-      reading_count_++;
-//      ros::Duration(0.25).sleep();
+      if ((ros::Time::now() - last_timestamp_).toSec() > 1){
+        last_timestamp_ = ros::Time::now();
+        mean_filter_x_->add(msg->pose.pose.position.x);
+        mean_filter_y_->add(msg->pose.pose.position.y);
+        std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
+        reading_count_++;
+      }
     }else{
       ROS_INFO("Reading 1 filtered");
-      utm_reading1_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
-      utm_reading1_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
-      std::cout << "Final Values "<< utm_reading1_.pose.pose.position.x<< ", " << utm_reading1_.pose.pose.position.y << "]\n";
+      utm_read1_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
+      utm_read1_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
+      std::cout << "Final Values "<< utm_read1_.pose.pose.position.x<< ", " << utm_read1_.pose.pose.position.y << "]\n";
       has_utm_reading1_ = true;
       reading_count_ = 0;
     }
@@ -121,11 +117,11 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
       reading_count_++;
 //      ros::Duration(0.25).sleep();
     }else{
-      utm_reading2_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
-      utm_reading2_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
+      utm_read2_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
+      utm_read2_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
       has_utm_reading2_ = true;
       ROS_INFO("Reading 2 filtered");
-      std::cout << "Final Values "<< utm_reading2_.pose.pose.position.x<< ", " << utm_reading2_.pose.pose.position.y << "]\n";
+      std::cout << "Final Values "<< utm_read2_.pose.pose.position.x<< ", " << utm_read2_.pose.pose.position.y << "]\n";
       ROS_INFO("finished");
     }
     break;
@@ -165,11 +161,6 @@ void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   yaw_data_ = tf::getYaw(quat_data_);
 }
 
-void PoseEstimator::initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
-{
-  initial_pose_ = *msg;
-}
-
 
 /**
  * @brief PoseEstimator::calcPoseEstimated
@@ -178,16 +169,16 @@ void PoseEstimator::calcPoseEstimated(){
   if (has_utm_reading1_ && current_state_ == states::S1_READING1)
   {
     ROS_INFO("Getting p1");
-    p1_.pose.pose.position.x = utm_reading1_.pose.pose.position.x - centerX_;
-    p1_.pose.pose.position.y = utm_reading1_.pose.pose.position.y - centerY_;
+    p1_.pose.pose.position.x = utm_read1_.pose.pose.position.x - centerX_;
+    p1_.pose.pose.position.y = utm_read1_.pose.pose.position.y - centerY_;
     current_state_ = states::S2_MOVING;
   }
   if (has_utm_reading2_ && current_state_ == states::S3_READING2)
   {
     ROS_INFO("Getting p2");
-    p2_.pose = utm_reading2_.pose;
-    p2_.pose.pose.position.x = utm_reading2_.pose.pose.position.x - centerX_;
-    p2_.pose.pose.position.y = utm_reading2_.pose.pose.position.y - centerY_;
+    p2_.pose = utm_read2_.pose;
+    p2_.pose.pose.position.x = utm_read2_.pose.pose.position.x - centerX_;
+    p2_.pose.pose.position.y = utm_read2_.pose.pose.position.y - centerY_;
     current_state_ = states::S4_FINISHED;
     // get angle by atan2
     p2_.pose.pose.position.z = atan2((p2_.pose.pose.position.y - p1_.pose.pose.position.y),(p2_.pose.pose.position.x - p1_.pose.pose.position.x));
