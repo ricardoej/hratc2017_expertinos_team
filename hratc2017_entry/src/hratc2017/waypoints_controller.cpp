@@ -21,7 +21,7 @@ namespace hratc2017
  */
 WaypointsController::WaypointsController(ros::NodeHandle* nh)
     : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true),
-      active_goal_(false), avoiding_obstacle_(false), scanning_(false), moving_away_(false)
+      active_goal_(false), avoiding_obstacle_(false), scanning_(false), moving_away_(false), start_(false)
 {
   corners_sub_ =
       nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
@@ -35,6 +35,7 @@ WaypointsController::WaypointsController(ros::NodeHandle* nh)
                                 &WaypointsController::setMineCallback, this);
   waypoints_pub_ =
       nh->advertise<visualization_msgs::Marker>("waypoint_markers", 0);
+  start_srv_ = nh->advertiseService("/start_hratc2017", &WaypointsController::startCallback, this);
 }
 
 /**
@@ -46,11 +47,21 @@ WaypointsController::~WaypointsController()
   scanning_sub_.shutdown();
   moving_away_sub_.shutdown();
   waypoints_pub_.shutdown();
+  start_srv_.shutdown();
   if (map_)
   {
     delete map_;
     map_ = NULL;
   }
+}
+
+/**
+ * @brief WaypointsController::isSettedUp
+ * @return
+ */
+bool WaypointsController::isSettedUp()
+{
+  return start_;
 }
 
 /**
@@ -207,6 +218,28 @@ void WaypointsController::movingAwayCallback(const std_msgs::Bool::ConstPtr &msg
     moving_away_ = msg->data;
     ROS_DEBUG("Is moving away? %s.", moving_away_ ? "TRUE" : "FALSE");
   }
+}
+
+/**
+ * @brief WaypointsController::startCallback
+ * @param request
+ * @param response
+ * @return
+ */
+bool WaypointsController::startCallback(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+{
+  if (!start_)
+  {
+    start_ = true;
+    response.success = true;
+    response.message = "Waypoint Controller has started!!!";
+  }
+  else
+  {
+    response.success = false;
+    response.message = "Waypoint Controller has already started before!!!";
+  }
+  return true;
 }
 
 /**

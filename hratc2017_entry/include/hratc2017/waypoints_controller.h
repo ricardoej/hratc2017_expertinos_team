@@ -21,6 +21,7 @@
 #include <std_msgs/Bool.h>
 #include "hratc2017/map_coverage.h"
 #include "utilities/ros_node.h"
+#include <std_srvs/Trigger.h>
 
 namespace hratc2017
 {
@@ -42,11 +43,14 @@ private:
   ros::Subscriber avoiding_obstacle_sub_;
   ros::Subscriber set_mine_sub_;
   ros::Publisher waypoints_pub_;
+  ros::ServiceServer start_srv_;
   MapCoverage* map_;
   bool active_goal_;
   bool avoiding_obstacle_;
   bool scanning_;
   bool moving_away_;
+  bool start_;
+  virtual bool isSettedUp();
   virtual void controlLoop();
   bool ok() const;
   void sendGoal(const geometry_msgs::Pose& target_pose);
@@ -56,6 +60,7 @@ private:
   void avoidingObstacleCallback(const std_msgs::Bool::ConstPtr& msg);
   void scanningCallback(const std_msgs::Bool::ConstPtr& msg);
   void movingAwayCallback(const std_msgs::Bool::ConstPtr& msg);
+  bool startCallback(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response);
   void setMineCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
   void goalActiveCallback();
   void feedbackCallback(const move_base_msgs::MoveBaseFeedback::ConstPtr& feedback);

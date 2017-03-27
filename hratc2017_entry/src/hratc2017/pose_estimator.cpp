@@ -19,7 +19,7 @@ namespace hratc2017
  * @param nh
  */
 PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), has_pose_estimated_(false),
+    : ROSNode(nh, 30), startedHRATC_(false), has_pose_estimated_(false),
       current_state_(states::S1_READING1), has_utm_reading1_(false),
       has_utm_reading2_(false), isMoving_(false), has_imu_initial_(false),
       has_odom_initial_(false), mean_filter_x_(new utilities::MeanFilter(NUMBER_OF_SAMPLES)),
@@ -36,6 +36,7 @@ PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
   pose_estimated_pub_ = nh->advertise<nav_msgs::Odometry>("/odom_w_offset", 10, true);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1, true);
   imu_pub_ = nh->advertise<sensor_msgs::Imu>("/imu_w_offset", 10, true);
+  start_hratc2017_cli_ = nh->serviceClient<std_srvs::Trigger>("/start_hratc2017");
 }
 
 /**
@@ -48,6 +49,7 @@ PoseEstimator::~PoseEstimator()
   pose_estimated_pub_.shutdown();
   odom_p3at_sub_.shutdown();
   imu_sub_.shutdown();
+  start_hratc2017_cli_.shutdown();
 }
 
 /**
@@ -60,6 +62,7 @@ void PoseEstimator::controlLoop()
   }
   else if(has_imu_initial_){
     sendImuEkf();
+    startHRATC2017();
   }
   if (has_utm_reading1_ && has_imu_initial_){
     sendOdomWithOffset();
@@ -76,7 +79,7 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   {
   case states::S1_READING1:
     if(reading_count_< NUMBER_OF_SAMPLES){
-      if ((ros::Time::now() - last_timestamp_).toSec() > 1){
+      if ((ros::Time::now() - last_timestamp_).toSec() > SAMPLING_DURATION){
         last_timestamp_ = ros::Time::now();
         mean_filter_x_->add(msg->pose.pose.position.x);
         mean_filter_y_->add(msg->pose.pose.position.y);
@@ -106,16 +109,19 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
       ROS_INFO("stopped moving");
       setVelocity(0, 0);
       current_state_ = states::S3_READING2;
+      last_timestamp_ = ros::Time::now();
     }
     break;
   case states::S3_READING2:
     if(reading_count_ < NUMBER_OF_SAMPLES)
     {
-      mean_filter_x_->add(msg->pose.pose.position.x);
-      mean_filter_y_->add(msg->pose.pose.position.y);
-      std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
-      reading_count_++;
-//      ros::Duration(0.25).sleep();
+      if ((ros::Time::now() - last_timestamp_).toSec() > SAMPLING_DURATION){
+        last_timestamp_ = ros::Time::now();
+        mean_filter_x_->add(msg->pose.pose.position.x);
+        mean_filter_y_->add(msg->pose.pose.position.y);
+        std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
+        reading_count_++;
+      }
     }else{
       utm_read2_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
       utm_read2_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
@@ -221,4 +227,25 @@ void PoseEstimator::setVelocity(double vx, double wz)
   msg.angular.z = wz;
   cmd_vel_pub_.publish(msg);
 }
+
+void PoseEstimator::startHRATC2017()
+{
+  if(startedHRATC_)
+    return;
+
+  std_srvs::Trigger srv;
+  if (start_hratc2017_cli_.call(srv))
+  {
+    if (srv.response.success)
+    {
+      ROS_INFO("%s", srv.response.message.c_str());
+    }
+    else
+    {
+      ROS_WARN("%s", srv.response.message.c_str());
+    }
+  }
+  startedHRATC_ = true;
+}
+
 }

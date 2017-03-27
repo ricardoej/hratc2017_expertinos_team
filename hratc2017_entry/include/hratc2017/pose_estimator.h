@@ -17,13 +17,14 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
+#include <std_srvs/Trigger.h>
 #include <visualization_msgs/MarkerArray.h>
 #include "utilities/mean_filter.h"
 #include "utilities/ros_node.h"
 
 #define CENTER_X 483238.6184840562
 #define CENTER_Y 6674530.097688958
-
+#define SAMPLING_DURATION 0.1
 #define NUMBER_OF_SAMPLES 10
 
 namespace hratc2017
@@ -58,6 +59,7 @@ private:
   bool has_odom_initial_;
   bool isMoving_;
   bool wating_;
+  bool startedHRATC_;
   ros::Time timer_;
   ros::Time last_timestamp_;
 
@@ -91,6 +93,7 @@ private:
   ros::Publisher odom_offset_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher pose_estimated_pub_;
+  ros::ServiceClient start_hratc2017_cli_;
   double centerX_;
   double centerY_;
   double yaw_initial_;
@@ -112,6 +115,7 @@ private:
   void sendImuEkf();
   void sendOdomWithOffset();
   void setVelocity(double vx, double wz);
+  void startHRATC2017();
 
 };
 }
