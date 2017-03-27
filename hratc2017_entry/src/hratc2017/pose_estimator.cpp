@@ -1,11 +1,11 @@
 /**
- *  This source file implements the MapController class, which is
- *based on the ROSNode helper class. It controls the map_Controller_node.
+ *  This source file implements the PoseEstimator class, which is
+ *based on the ROSNode helper class. It controls the pose_estimador_node.
  *
  *  Version: 1.0.0
  *  Created on: 21/03/2017
  *  Modified on: 21/03/2017
- *  Author: Ricardo Emerson Julio (ricardoej@gmail.com)
+ *  Author: Luiz Fernando Nunes (luizfernandolfn@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
 
@@ -15,14 +15,15 @@ namespace hratc2017
 {
 
 /**
- * @brief MapController::MapController
+ * @brief PoseEstimator::PoseEstimador
  * @param nh
  */
 PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
-    : ROSNode(nh, 30), pose_estimated_sent_(false),
+    : ROSNode(nh, 30), has_pose_estimated_(false),
       current_state_(states::S1_READING1), has_utm_reading1_(false),
       has_utm_reading2_(false), isMoving_(false), has_imu_initial_(false),
-      has_odom_initial_(false)
+      has_odom_initial_(false), mean_filter_x_(new utilities::MeanFilter(NUMBER_OF_SAMPLES)),
+      mean_filter_y_(new utilities::MeanFilter(NUMBER_OF_SAMPLES)), reading_count_(0)
 {
   ros::NodeHandle pnh("~");
   pnh.param("centerX", centerX_, CENTER_X);
@@ -60,61 +61,15 @@ PoseEstimator::~PoseEstimator()
  */
 void PoseEstimator::controlLoop()
 {
-  if (!pose_estimated_sent_)
-  {
-    if (has_utm_reading1_ && current_state_ == states::S1_READING1)
-    {
-      ROS_INFO("Getting p1");
-      p1_.pose.pose.position.x = utm_reading1_.pose.pose.position.x - centerX_;
-      p1_.pose.pose.position.y = utm_reading1_.pose.pose.position.y - centerY_;
-      current_state_ = states::S2_MOVING;
-    }
-    if (has_utm_reading2_ && current_state_ == states::S3_READING2)
-    {
-      ROS_INFO("Getting p2");
-      p2_.pose = utm_reading2_.pose;
-      p2_.pose.pose.position.x = utm_reading2_.pose.pose.position.x - centerX_;
-      p2_.pose.pose.position.y = utm_reading2_.pose.pose.position.y - centerY_;
-      current_state_ = states::S4_FINISHED;
-      // get angle z by atan
-      p2_.pose.pose.position.z =
-          atan2((p2_.pose.pose.position.y - p1_.pose.pose.position.y),
-                (p2_.pose.pose.position.x - p1_.pose.pose.position.x));
-      // pose_estimated_pub_.publish(p2_);
-      pose_estimated_sent_ = true;
-      ROS_INFO("p1 - (%f,%f)", p1_.pose.pose.position.x,
-               p1_.pose.pose.position.y);
-      ROS_INFO("p2 - (%f,%f)", p2_.pose.pose.position.x,
-               p2_.pose.pose.position.y);
-      ROS_INFO("Published pose estimated (x=%f, y=%f, z=%f)",
-               p2_.pose.pose.position.x, p2_.pose.pose.position.y,
-               p2_.pose.pose.position.z);
-    }
+  if (!has_pose_estimated_){
+    calcPoseEstimated();
   }
-  else
-  {
-    yaw_ekf_ = yaw_data_ + p2_.pose.pose.position.z - yaw_initial_;
-    quat_ekf_ = tf::createQuaternionFromYaw(yaw_ekf_);
-
-    imu_ekf_ = imu_data_;
-    // imu_ekf_.orientation.x = quat_ekf_.getX();
-    // imu_ekf_.orientation.y = quat_ekf_.getY();
-    imu_ekf_.orientation.z = quat_ekf_.getZ();
-    imu_ekf_.orientation.w = quat_ekf_.getW();
-
-    imu_pub_.publish(imu_ekf_);
+  else if(has_imu_initial_){
+    sendImuEkf();
   }
-
-  // Calculate position estimate with offset and initial odom.
-  // Position_estimate[t] = position[t] + initialpose - position[0]
-
-  odom_w_offset_ = odom_p3at_;
-  odom_w_offset_.pose.pose.position.x +=
-      p1_.pose.pose.position.x - odom_initial_.pose.pose.position.x;
-  odom_w_offset_.pose.pose.position.y +=
-      p1_.pose.pose.position.y - odom_initial_.pose.pose.position.y;
-
-  pose_estimated_pub_.publish(odom_w_offset_);
+  if (has_utm_reading1_ && has_imu_initial_){
+    sendOdomWithOffset();
+  }
 }
 
 /**
@@ -126,17 +81,21 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
   switch (current_state_)
   {
   case states::S1_READING1:
-    ROS_INFO("reading 1");
-    utm_reading1_ = *msg;
-    has_utm_reading1_ = true;
+    if(reading_count_< NUMBER_OF_SAMPLES){
+      mean_filter_x_->add(msg->pose.pose.position.x);
+      mean_filter_y_->add(msg->pose.pose.position.y);
+      std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
+      reading_count_++;
+//      ros::Duration(0.25).sleep();
+    }else{
+      ROS_INFO("Reading 1 filtered");
+      utm_reading1_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
+      utm_reading1_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
+      std::cout << "Final Values "<< utm_reading1_.pose.pose.position.x<< ", " << utm_reading1_.pose.pose.position.y << "]\n";
+      has_utm_reading1_ = true;
+      reading_count_ = 0;
+    }
     break;
-  // timer_ = ros::Time::now();
-  // while((ros::Time::now() - timer_).toSec() < 2){
-  //     mean_filter_.add(*msg);
-  // }
-  // utm_reading1_ = mean_filter_.getFilteredValue();
-  // has_utm_reading1_ = true;
-  // break;
   case states::S2_MOVING:
     ROS_INFO("moving....");
     if (!isMoving_)
@@ -154,27 +113,34 @@ void PoseEstimator::gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
     }
     break;
   case states::S3_READING2:
-    ROS_INFO("reading 2");
-    utm_reading2_ = *msg;
-    has_utm_reading2_ = true;
-    ROS_INFO("finished");
+    if(reading_count_ < NUMBER_OF_SAMPLES)
+    {
+      mean_filter_x_->add(msg->pose.pose.position.x);
+      mean_filter_y_->add(msg->pose.pose.position.y);
+      std::cout << "Leitura "<< reading_count_<<": ["<< msg->pose.pose.position.x<< ", " << msg->pose.pose.position.y << "]\n";
+      reading_count_++;
+//      ros::Duration(0.25).sleep();
+    }else{
+      utm_reading2_.pose.pose.position.x = mean_filter_x_->getFilteredValue();
+      utm_reading2_.pose.pose.position.y = mean_filter_y_->getFilteredValue();
+      has_utm_reading2_ = true;
+      ROS_INFO("Reading 2 filtered");
+      std::cout << "Final Values "<< utm_reading2_.pose.pose.position.x<< ", " << utm_reading2_.pose.pose.position.y << "]\n";
+      ROS_INFO("finished");
+    }
     break;
   }
 }
 
 void PoseEstimator::odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
-
-  if (!has_odom_initial_)
+  if (!has_odom_initial_ && has_utm_reading1_)
   {
     odom_initial_.pose.pose.position.x = msg->pose.pose.position.x;
     odom_initial_.pose.pose.position.y = msg->pose.pose.position.y;
     has_odom_initial_ = true;
   }
-
   odom_p3at_ = *msg;
-  // std::cout << "Valor odom x = " << odom_initial_.pose.pose.position.x <<
-  // std::endl;
 }
 
 void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -197,13 +163,64 @@ void PoseEstimator::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   quat_data_.setZ(msg->orientation.z);
   quat_data_.setW(msg->orientation.w);
   yaw_data_ = tf::getYaw(quat_data_);
-  // std::cout << "yaw data: " << yaw_data_ << std::endl;
 }
 
-void PoseEstimator::initialPoseCallback(
-    const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
+void PoseEstimator::initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
   initial_pose_ = *msg;
+}
+
+
+/**
+ * @brief PoseEstimator::calcPoseEstimated
+ */
+void PoseEstimator::calcPoseEstimated(){
+  if (has_utm_reading1_ && current_state_ == states::S1_READING1)
+  {
+    ROS_INFO("Getting p1");
+    p1_.pose.pose.position.x = utm_reading1_.pose.pose.position.x - centerX_;
+    p1_.pose.pose.position.y = utm_reading1_.pose.pose.position.y - centerY_;
+    current_state_ = states::S2_MOVING;
+  }
+  if (has_utm_reading2_ && current_state_ == states::S3_READING2)
+  {
+    ROS_INFO("Getting p2");
+    p2_.pose = utm_reading2_.pose;
+    p2_.pose.pose.position.x = utm_reading2_.pose.pose.position.x - centerX_;
+    p2_.pose.pose.position.y = utm_reading2_.pose.pose.position.y - centerY_;
+    current_state_ = states::S4_FINISHED;
+    // get angle by atan2
+    p2_.pose.pose.position.z = atan2((p2_.pose.pose.position.y - p1_.pose.pose.position.y),(p2_.pose.pose.position.x - p1_.pose.pose.position.x));
+    // pose_estimated_pub_.publish(p2_);
+    has_pose_estimated_ = true;
+    ROS_INFO("p1 - (%f,%f)", p1_.pose.pose.position.x, p1_.pose.pose.position.y);
+    ROS_INFO("p2 - (%f,%f)", p2_.pose.pose.position.x, p2_.pose.pose.position.y);
+    ROS_INFO("Published pose estimated (x=%f, y=%f, z=%f)", p2_.pose.pose.position.x, p2_.pose.pose.position.y, p2_.pose.pose.position.z);
+  }
+}
+
+/**
+ * @brief PoseEstimator::sendImuEkf
+ */
+void PoseEstimator::sendImuEkf(){
+  yaw_ekf_ = yaw_data_ + p2_.pose.pose.position.z - yaw_initial_;
+  quat_ekf_ = tf::createQuaternionFromYaw(yaw_ekf_);
+  imu_ekf_ = imu_data_;
+  imu_ekf_.orientation.z = quat_ekf_.getZ();
+  imu_ekf_.orientation.w = quat_ekf_.getW();
+  imu_pub_.publish(imu_ekf_);
+}
+
+/**
+ * @brief PoseEstimator::sendOdomWithOffset
+ * Calculate position estimate with offset and initial odom.
+ * Position_estimate[t] = position[t] + initialpose - position[0]
+ */
+void PoseEstimator::sendOdomWithOffset(){
+    odom_w_offset_ = odom_p3at_;
+    odom_w_offset_.pose.pose.position.x += p1_.pose.pose.position.x - odom_initial_.pose.pose.position.x;
+    odom_w_offset_.pose.pose.position.y += p1_.pose.pose.position.y - odom_initial_.pose.pose.position.y;
+    pose_estimated_pub_.publish(odom_w_offset_);
 }
 
 void PoseEstimator::setVelocity(double vx, double wz)

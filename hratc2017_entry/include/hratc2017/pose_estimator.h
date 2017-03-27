@@ -24,6 +24,8 @@
 #define CENTER_X 483238.6184840562
 #define CENTER_Y 6674530.097688958
 
+#define NUMBER_OF_SAMPLES 10
+
 namespace hratc2017
 {
 
@@ -49,7 +51,7 @@ public:
   virtual ~PoseEstimator();
 
 private:
-  bool pose_estimated_sent_;
+  bool has_pose_estimated_;
   bool has_utm_reading1_;
   bool has_utm_reading2_;
   bool has_imu_initial_;
@@ -72,6 +74,7 @@ private:
   nav_msgs::Odometry utm_reading1_;
   nav_msgs::Odometry utm_reading2_;
 
+//  nav_msgs::Odometry gps_odom_;
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
   nav_msgs::Odometry odom_w_offset_;
@@ -92,16 +95,24 @@ private:
   double yaw_initial_;
   double yaw_data_;
   double yaw_ekf_;
+  int reading_count_;
   StateEnum current_state_;
+
+  utilities::MeanFilter* mean_filter_x_;
+  utilities::MeanFilter* mean_filter_y_;
+
+
   virtual void controlLoop();
   void gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-  void initialPoseCallback(
-      const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
-  void setNextStage();
+  void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
+  void calcPoseEstimated();
+  void sendImuEkf();
+  void sendOdomWithOffset();
   void setVelocity(double vx, double wz);
+
 };
 }
 

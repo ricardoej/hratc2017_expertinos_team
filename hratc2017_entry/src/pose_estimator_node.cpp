@@ -19,7 +19,7 @@
  */
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "map_controller_node");
+  ros::init(argc, argv, "pose_estimator_node");
   ros::NodeHandle nh;
   hratc2017::PoseEstimator* node = new hratc2017::PoseEstimator(&nh);
   node->spin();
