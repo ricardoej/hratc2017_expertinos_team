@@ -43,6 +43,7 @@ set(H_FILES
   include/utilities/exception.h
   include/utilities/filter.h
   include/utilities/mean_filter.h
+  include/utilities/point_mean_filter.h
   include/utilities/points.h
   include/utilities/ros_node.h
 )
@@ -55,6 +56,7 @@ set(CPP_FILES
   src/hratc2017/pose_estimator.cpp
   src/utilities/double_mean_filter.cpp
   src/utilities/exception.cpp
+  src/utilities/point_mean_filter.cpp
   src/utilities/points.cpp
   src/utilities/ros_node.cpp
 )

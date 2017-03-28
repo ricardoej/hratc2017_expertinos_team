@@ -19,7 +19,7 @@
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <visualization_msgs/MarkerArray.h>
-#include "utilities/double_mean_filter.h"
+#include "utilities/point_mean_filter.h"
 #include "utilities/ros_node.h"
 
 #define CENTER_X 483238.6184840562
@@ -29,10 +29,8 @@
 
 namespace hratc2017
 {
-
 namespace states
 {
-
 enum StateEnum
 {
   S0_STOPPED,
@@ -57,28 +55,24 @@ private:
   bool has_utm_reading2_;
   bool has_imu_initial_;
   bool has_odom_initial_;
-  bool isMoving_;
+  bool moving_;
   bool wating_;
   bool started_hratc2017_;
   ros::Time timer_;
   ros::Time last_timestamp_;
 
-  // utilities::MeanFilter mean_filter_;
-  geometry_msgs::PoseWithCovarianceStamped p1_;
-  geometry_msgs::PoseWithCovarianceStamped p2_;
+  geometry_msgs::Point p0_;
+  geometry_msgs::Point p1_;
+  geometry_msgs::Point p2_;
+  double angle_;
 
   tf::Quaternion quat_initial_;
   tf::Quaternion quat_data_;
   tf::Quaternion quat_ekf_;
-
   sensor_msgs::Imu imu_data_;
   sensor_msgs::Imu imu_initial_;
   sensor_msgs::Imu imu_ekf_;
 
-  nav_msgs::Odometry utm_read1_;
-  nav_msgs::Odometry utm_read2_;
-
-  //  nav_msgs::Odometry gps_odom_;
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
   nav_msgs::Odometry odom_w_offset_;
@@ -94,16 +88,12 @@ private:
   ros::Publisher cmd_vel_pub_;
   ros::Publisher pose_estimated_pub_;
   ros::ServiceClient start_hratc2017_cli_;
-  double centerX_;
-  double centerY_;
   double yaw_initial_;
   double yaw_data_;
   double yaw_ekf_;
   int reading_count_;
   StateEnum current_state_;
-
-  utilities::DoubleMeanFilter* mean_filter_x_;
-  utilities::DoubleMeanFilter* mean_filter_y_;
+  utilities::PointMeanFilter* mean_filter_;
 
   virtual void controlLoop();
   void gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);

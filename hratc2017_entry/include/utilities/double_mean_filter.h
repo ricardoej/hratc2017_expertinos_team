@@ -2,9 +2,9 @@
  *  This header file defines the DoubleMeanFilter helper class, which
  *is based on MeanFilter helper class.
  *
- *  Version: 1.1.4
- *  Created on: 22/03/2017
- *  Modified on: 22/03/2017
+ *  Version: 1.1.5
+ *  Created on: 27/03/2017
+ *  Modified on: 27/03/2017
  *  Author: Adriano Henrique Rossette Leite (adrianohrl@gmail.com)
  *  Maintainer: Expertinos UNIFEI (expertinos.unifei@gmail.com)
  */
