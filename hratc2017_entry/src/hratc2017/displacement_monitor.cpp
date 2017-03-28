@@ -44,10 +44,7 @@ bool DisplacementMonitor::isSettedUp() const { return setted_up_; }
  * @brief DisplacementMonitor::isGoalSetted
  * @return
  */
-bool DisplacementMonitor::isGoalSetted() const
-{
-  return goal_setted_;
-}
+bool DisplacementMonitor::isGoalSetted() const { return goal_setted_; }
 
 /**
  * @brief DisplacementMonitor::goalAchieved
@@ -55,28 +52,56 @@ bool DisplacementMonitor::isGoalSetted() const
  */
 bool DisplacementMonitor::goalAchieved() const
 {
-  return goal_setted_ && fabs(disp_x_ - goal_x_) <= linear_tolerance_ &&
-         fabs(disp_y_ - goal_y_) <= linear_tolerance_ &&
-      fabs(disp_phi_ - goal_phi_) <= angular_tolerance_;
+  return goalXAchieved() && goalYAchieved() && goalPhiAchieved();
 }
 
 /**
- * @brief DisplacementMonitor::getCurrX
+ * @brief DisplacementMonitor::goalXAchieved
  * @return
  */
-double DisplacementMonitor::getCurrX() const{ return curr_x_; }
+bool DisplacementMonitor::goalXAchieved() const
+{
+  return goal_setted_ && fabs(disp_x_ - goal_x_) <= linear_tolerance_;
+}
 
 /**
- * @brief DisplacementMonitor::getCurrY
+ * @brief DisplacementMonitor::goalYAchieved
  * @return
  */
-double DisplacementMonitor::getCurrY() const{ return curr_y_; }
+bool DisplacementMonitor::goalYAchieved() const
+{
+  return goal_setted_ && fabs(disp_y_ - goal_y_) <= linear_tolerance_;
+}
 
 /**
- * @brief DisplacementMonitor::getCurrPhi
+ * @brief DisplacementMonitor::goalPhiAchieved
  * @return
  */
-double DisplacementMonitor::getCurrPhi() const{ return curr_phi_; }
+bool DisplacementMonitor::goalPhiAchieved() const
+{
+  return goal_setted_ && fabs(disp_phi_ - goal_phi_) <= angular_tolerance_;
+}
+
+/**
+ * @brief DisplacementMonitor::getXError
+ * @return
+ */
+double DisplacementMonitor::getXError() const { return goal_x_ - disp_x_; }
+
+/**
+ * @brief DisplacementMonitor::getYError
+ * @return
+ */
+double DisplacementMonitor::getYError() const { return goal_y_ - disp_y_; }
+
+/**
+ * @brief DisplacementMonitor::getPhiError
+ * @return
+ */
+double DisplacementMonitor::getPhiError() const
+{
+  return goal_phi_ - disp_phi_;
+}
 
 /**
  * @brief DisplacementMonitor::getDispX

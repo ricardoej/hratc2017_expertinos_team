@@ -31,12 +31,15 @@ public:
   bool isSettedUp() const;
   bool isGoalSetted() const;
   bool goalAchieved() const;
-  double getCurrX() const;
-  double getCurrY() const;
-  double getCurrPhi() const;
+  bool goalXAchieved() const;
+  bool goalYAchieved() const;
+  bool goalPhiAchieved() const;
   double getDispX() const;
   double getDispY() const;
   double getDispPhi() const;
+  double getXError() const;
+  double getYError() const;
+  double getPhiError() const;
   void setGoal(double x, double phi = 0.0);
   void setGoal(double x, double y, double phi);
   void setLinearTolerance(double tol);
