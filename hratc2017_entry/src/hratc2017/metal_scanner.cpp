@@ -171,11 +171,11 @@ void MetalScanner::setNextState()
     }
     break;
   case states::S6_CHANGING_DIRECTION:
-    ROS_INFO("\n DispPhi: %f \n GoalPhi: %f", disp_monitor_.getDispPhi(),
-             s6_changing_direction_phi_);
-    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
-             disp_monitor_.getXError(), disp_monitor_.getDispY(),
-             disp_monitor_.getPhiError());
+//    ROS_INFO("\n DispPhi: %f \n GoalPhi: %f", disp_monitor_.getDispPhi(),
+//             s6_changing_direction_phi_);
+//    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
+//             disp_monitor_.getXError(), disp_monitor_.getDispY(),
+//             disp_monitor_.getPhiError());
     if (disp_monitor_.goalPhiAchieved())
     {
       current_state_ = states::S7_MOVING_AWAY;
@@ -185,11 +185,11 @@ void MetalScanner::setNextState()
     }
     break;
   case states::S7_MOVING_AWAY:
-    ROS_INFO("\n DispX: %f \n GoalX: %f", disp_monitor_.getDispX(),
-             s7_moving_away_x_);
-    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
-             disp_monitor_.getXError(), disp_monitor_.getDispY(),
-             disp_monitor_.getPhiError());
+//    ROS_INFO("\n DispX: %f \n GoalX: %f", disp_monitor_.getDispX(),
+//             s7_moving_away_x_);
+//    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
+//             disp_monitor_.getXError(), disp_monitor_.getDispY(),
+//             disp_monitor_.getPhiError());
     if (disp_monitor_.goalXAchieved())
     {
       reset();
