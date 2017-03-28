@@ -49,6 +49,14 @@ MetalScanner::MetalScanner(ros::NodeHandle* nh)
   ROS_INFO("   Pause time %f", pause_time_);
   pnh.param("std_radius", std_radius_, STANDARD_RADIUS);
   ROS_INFO("   Standard radius of separation: %f", std_radius_);
+  pnh.param("s5_moving_back_x", s5_moving_back_x_, S5_MOVING_BACK_X);
+  ROS_INFO("   S5 Moving back x: %f", s5_moving_back_x_);
+  pnh.param("s6_changing_direction_phi", s6_changing_direction_phi_,
+            S6_CHANGING_DIRECTION_PHI);
+  s6_changing_direction_phi_ *= M_PI / 180;
+  ROS_INFO("   S6 Changing direction phi: %f", s6_changing_direction_phi_);
+  pnh.param("s7_moving_away_x", s7_moving_away_x_, S7_MOVING_AWAY_X);
+  ROS_INFO("   S7 Moving away x: %f", s7_moving_away_x_);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
   moving_away_pub_ = nh->advertise<std_msgs::Bool>("moving_away", 1);
   known_landmine_pub_ = nh->advertise<std_msgs::Bool>("known_mine", 1, true);
@@ -146,31 +154,39 @@ void MetalScanner::setNextState()
   case states::S4_SCANNING_BACK:
     if (coils_.isBothLow())
     {
-      disp_monitor_.reset();
-      disp_monitor_.setGoal(S5_MOVING_BACK_X);
       current_state_ = states::S5_MOVING_BACK;
       ROS_INFO("   S4_SCANNING_BACK  -->  S5_MOVING_BACK");
+      disp_monitor_.reset();
+      disp_monitor_.setGoal(s5_moving_back_x_);
     }
     break;
   case states::S5_MOVING_BACK:
+//    ROS_INFO("\n CurrentX:  %f \n DispX: %f \n GoalX: %f",
+//             disp_monitor_.getCurrX(), disp_monitor_.getDispX(),
+//             s5_moving_back_x_);
     if (disp_monitor_.goalAchieved())
     {
-      disp_monitor_.reset();
-      disp_monitor_.setGoal(0.0, S6_CHANGING_DIRECTION_PHI);
       current_state_ = states::S6_CHANGING_DIRECTION;
       ROS_INFO("   S5_MOVING_BACK  -->  S6_CHANGING_DIRECTION");
+      disp_monitor_.setGoal(0.0, s6_changing_direction_phi_);
     }
     break;
   case states::S6_CHANGING_DIRECTION:
+//    ROS_INFO("\n CurrentPhi:  %f \n DispPhi: %f \n GoalPhi: %f",
+//             disp_monitor_.getCurrPhi(), disp_monitor_.getDispPhi(),
+//             s6_changing_direction_phi_);
     if (disp_monitor_.goalAchieved())
     {
-      disp_monitor_.reset();
-      disp_monitor_.setGoal(0.0, S7_MOVING_AWAY_X);
       current_state_ = states::S7_MOVING_AWAY;
       ROS_INFO("   S5_CHANGING_DIRECTION  -->  S6_MOVING_AWAY");
+      disp_monitor_.reset();
+      disp_monitor_.setGoal(0.0, s7_moving_away_x_);
     }
     break;
   case states::S7_MOVING_AWAY:
+//    ROS_INFO("CurrentX:  %f \n DispX: %f \n GoalX: %f",
+//             disp_monitor_.getCurrX(), disp_monitor_.getDispX(),
+//             s7_moving_away_x_);
     if (disp_monitor_.goalAchieved())
     {
       reset();

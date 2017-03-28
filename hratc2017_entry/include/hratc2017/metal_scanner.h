@@ -34,7 +34,7 @@
 #define MOVING_AWAY_TIME 3.0
 #define STANDARD_RADIUS 0.5
 #define S5_MOVING_BACK_X -0.15
-#define S6_CHANGING_DIRECTION_PHI M_PI_2
+#define S6_CHANGING_DIRECTION_PHI -M_PI_2
 #define S7_MOVING_AWAY_X 0.15
 
 namespace hratc2017
@@ -87,6 +87,9 @@ private:
   double max_coil_signal_;
   double pause_time_;
   double std_radius_;
+  double s5_moving_back_x_;
+  double s6_changing_direction_phi_;
+  double s7_moving_away_x_;
   bool scanning_;
   bool moving_away_;
   std::vector<geometry_msgs::Point> mines_;

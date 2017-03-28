@@ -4,7 +4,10 @@ angular_velocity_z: 0.75
 angular_Kp: 1.5
 linear_Kp: 1.25
 linear_tolerance: 0.05
-angular_tolerance: 0.01
+angular_tolerance: 0.05
 min_coil_signal: 0.4
 max_coil_signal: 0.95
 pause_time: 1.0
+s5_moving_back_x: -0.15
+s6_changing_direction_phi: -90
+s7_moving_away_x: 0.15
