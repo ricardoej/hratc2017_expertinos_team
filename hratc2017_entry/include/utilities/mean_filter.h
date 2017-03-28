@@ -1,6 +1,6 @@
 /**
- *  This header file implements the MeanFilter helper class, which is based on
- *Filter helper class.
+ *  This header file defines and implements the MeanFilter helper class, which
+ *is based on Filter helper class.
  *
  *  Version: 1.1.4
  *  Created on: 22/03/2017
@@ -16,17 +16,41 @@
 
 namespace utilities
 {
-class MeanFilter : public Filter
+template <typename T> class MeanFilter : public Filter<T>
 {
 public:
   MeanFilter(unsigned int number_of_samples);
   virtual ~MeanFilter();
-  double getFilteredValue() const;
-  virtual void add(double sample);
+  virtual void add(T sample);
 
 private:
-  double filtered_value_;
+  virtual T getMeanValue() const = 0;
 };
+
+/**
+ * @brief MeanFilter::MeanFilter
+ * @param number_of_samples
+ */
+template <typename T>
+MeanFilter<T>::MeanFilter(unsigned int number_of_samples)
+    : Filter<T>::Filter(number_of_samples)
+{
+}
+
+/**
+ * @brief MeanFilter::~MeanFilter
+ */
+template <typename T> MeanFilter<T>::~MeanFilter() {}
+
+/**
+ * @brief MeanFilter::add
+ * @param sample
+ */
+template <typename T> void MeanFilter<T>::add(T sample)
+{
+  Filter<T>::add(sample);
+  Filter<T>::setFilteredValue(getMeanValue());
+}
 }
 
 #endif // _UTILITIES_MEAN_FILTER_H_

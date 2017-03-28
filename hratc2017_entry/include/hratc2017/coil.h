@@ -15,7 +15,7 @@
 #include <sstream>
 #include <tf/tf.h>
 #include <geometry_msgs/PoseStamped.h>
-#include "utilities/mean_filter.h"
+#include "utilities/double_mean_filter.h"
 
 #define DEFAULT_DERIVATIVE_SAMPLE_TIME 0.1
 #define DEFAULT_LOW_COIL_SIGNAL_THRESHOLD 0.45
@@ -61,8 +61,8 @@ public:
 private:
   tf::Transform coil_tf_;
   geometry_msgs::PoseStamped pose_;
-  utilities::MeanFilter* value_filter_;
-  utilities::MeanFilter* derived_value_filter_;
+  utilities::DoubleMeanFilter* value_filter_;
+  utilities::DoubleMeanFilter* derived_value_filter_;
   std::string frame_id_;
   float last_value_;
   float sample_time_;

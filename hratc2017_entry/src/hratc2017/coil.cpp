@@ -26,8 +26,8 @@ Coil::Coil(std::string frame_id, float sample_time, float low_threshold,
            float high_threshold, unsigned int number_of_observations,
            unsigned int number_of_derivatives)
     : frame_id_(frame_id),
-      value_filter_(new utilities::MeanFilter(number_of_observations)),
-      derived_value_filter_(new utilities::MeanFilter(number_of_derivatives)),
+      value_filter_(new utilities::DoubleMeanFilter(number_of_observations)),
+      derived_value_filter_(new utilities::DoubleMeanFilter(number_of_derivatives)),
       sample_time_(sample_time), low_threshold_(low_threshold),
       high_threshold_(high_threshold)
 {

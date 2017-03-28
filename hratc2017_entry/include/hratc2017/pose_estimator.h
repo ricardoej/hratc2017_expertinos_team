@@ -19,7 +19,7 @@
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <visualization_msgs/MarkerArray.h>
-#include "utilities/mean_filter.h"
+#include "utilities/double_mean_filter.h"
 #include "utilities/ros_node.h"
 
 #define CENTER_X 483238.6184840562
@@ -59,7 +59,7 @@ private:
   bool has_odom_initial_;
   bool isMoving_;
   bool wating_;
-  bool startedHRATC_;
+  bool started_hratc2017_;
   ros::Time timer_;
   ros::Time last_timestamp_;
 
@@ -78,7 +78,7 @@ private:
   nav_msgs::Odometry utm_read1_;
   nav_msgs::Odometry utm_read2_;
 
-//  nav_msgs::Odometry gps_odom_;
+  //  nav_msgs::Odometry gps_odom_;
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
   nav_msgs::Odometry odom_w_offset_;
@@ -102,9 +102,8 @@ private:
   int reading_count_;
   StateEnum current_state_;
 
-  utilities::MeanFilter* mean_filter_x_;
-  utilities::MeanFilter* mean_filter_y_;
-
+  utilities::DoubleMeanFilter* mean_filter_x_;
+  utilities::DoubleMeanFilter* mean_filter_y_;
 
   virtual void controlLoop();
   void gpsOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
@@ -116,7 +115,6 @@ private:
   void sendOdomWithOffset();
   void setVelocity(double vx, double wz);
   void startHRATC2017();
-
 };
 }
 

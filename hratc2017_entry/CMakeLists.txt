@@ -38,6 +38,7 @@ set(H_FILES
   include/hratc2017/displacement_monitor.h
   include/hratc2017/map_coverage.h
   include/hratc2017/pose_estimator.h
+  include/utilities/double_mean_filter.h
   include/utilities/enum_converter.h
   include/utilities/exception.h
   include/utilities/filter.h
@@ -52,9 +53,8 @@ set(CPP_FILES
   src/hratc2017/displacement_monitor.cpp
   src/hratc2017/map_coverage.cpp
   src/hratc2017/pose_estimator.cpp
+  src/utilities/double_mean_filter.cpp
   src/utilities/exception.cpp
-  src/utilities/filter.cpp
-  src/utilities/mean_filter.cpp
   src/utilities/points.cpp
   src/utilities/ros_node.cpp
 )

@@ -10,7 +10,7 @@ Panels:
         - /OuterEllipse1/Namespaces1
         - /LaserScan_Hokuyo1
       Splitter Ratio: 0.786111
-    Tree Height: 324
+    Tree Height: 437
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -291,7 +291,7 @@ Visualization Manager:
       Max Color: 0; 0; 0
       Max Intensity: 999999
       Min Color: 0; 0; 0
-      Min Intensity: 999999
+      Min Intensity: 0
       Name: LaserScan_Hokuyo
       Position Transformer: XYZ
       Queue Size: 10
@@ -359,4 +359,4 @@ Window Geometry:
     collapsed: true
   Width: 1293
   X: 63
-  Y: 549
+  Y: 582
