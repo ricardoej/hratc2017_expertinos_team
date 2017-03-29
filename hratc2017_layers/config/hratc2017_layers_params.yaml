@@ -10,3 +10,15 @@ obstacles_layer:
   num_parts: 18
   radius: 0.25
   obstacles_topic: '/HRATC_FW/set_mine'
+  obstacles:
+    manual: true
+    size: 3
+    obstacle0:
+      x: 10.8414412908
+      y: -2.0325296335
+    obstacle1:
+      x: 6.6759533706
+      y: -1.1691806717
+    obstacle2:
+      x: -1.1745529239
+      y: -0.6197298011

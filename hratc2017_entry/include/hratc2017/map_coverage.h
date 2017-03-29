@@ -54,6 +54,7 @@ private:
   void clear();
   bool isInsideMineArea(geometry_msgs::Point waypoint,
                         geometry_msgs::Point& landmine) const;
+  bool isInsideMapArea(geometry_msgs::Point waypoint) const;
 };
 }
 

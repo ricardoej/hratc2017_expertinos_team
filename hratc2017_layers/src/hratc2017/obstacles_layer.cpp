@@ -60,6 +60,23 @@ void ObstaclesLayer::onInitialize()
   pnh.param("obstacles_topic", source, std::string("obstacles"));
   ROS_INFO("    Subscribed to topic: %s", source.c_str());
   current_ = true;
+  bool obstacles_manual;
+  pnh.param("obstacles/manual", obstacles_manual, false);
+  if (obstacles_manual)
+  {
+    int obstacles_size;
+    pnh.param("obstacles/size", obstacles_size, 0);
+    geometry_msgs::Point p;
+    for (int i(0); i < obstacles_size; i++)
+    {
+      std::stringstream ss;
+      ss << "obstacles/obstacle" << i << "/";
+      pnh.param(ss.str() + "x", p.x, 0.0);
+      pnh.param(ss.str() + "y", p.y, 0.0);
+      ROS_INFO("   Adding obstacle manually @ (%lf, %lf)", p.x, p.y);
+      obstacles_.push_back(p);
+    }
+  }
   obstacles_sub_ =
       pnh.subscribe(source, 10, &ObstaclesLayer::obstaclesCallback, this);
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(pnh);
@@ -162,9 +179,6 @@ void ObstaclesLayer::obstaclesCallback(
   min_y_ = std::min(min_y_, msg->pose.position.y - radius_);
   max_x_ = std::max(max_x_, msg->pose.position.x + radius_);
   max_y_ = std::max(max_y_, msg->pose.position.y + radius_);
-  geometry_msgs::Point obstacle(msg->pose.position);
-  /*obstacle.x = msg->pose.position.x;
-  obstacle.y = msg->pose.position.y;*/
-  obstacles_.push_back(obstacle);
+  obstacles_.push_back(msg->pose.position);
 }
 }

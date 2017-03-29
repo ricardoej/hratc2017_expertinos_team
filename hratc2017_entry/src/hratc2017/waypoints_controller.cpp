@@ -179,10 +179,10 @@ void WaypointsController::cornersCallback(
     for (int i(0); i < waypoints_size; i++)
     {
       std::stringstream ss;
-      ss << "waypoints/wp" << i << "/";
+      ss << "waypoints/waypoint" << i << "/";
       pnh.param(ss.str() + "x", p.x, 0.0);
       pnh.param(ss.str() + "y", p.y, 0.0);
-      ROS_INFO("%d) Adding manual waypoint @ (%lf, %lf)", i, p.x, p.y);
+      ROS_DEBUG("%d) Adding waypoint manually @ (%lf, %lf)", i, p.x, p.y);
       waypoints.push_back(p);
     }
   }

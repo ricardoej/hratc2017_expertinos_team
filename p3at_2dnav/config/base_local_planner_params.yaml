@@ -8,8 +8,8 @@ TrajectoryPlannerROS:
   acc_lim_theta: 3.2
   acc_lim_x: 2.5
   acc_lim_y: 2.5
-  xy_goal_tolerance: 0.20
-  yaw_goal_tolerance: 3.14
+  xy_goal_tolerance: 0.30
+  yaw_goal_tolerance: deg(360)
   holonomic_robot: false
   sim_time: 1.7             # The amount of time to forward-simulate trajectories in seconds.
   meter_scoring: true

@@ -3,4 +3,4 @@ controller_patience: 15.0
 oscillation_timeout: 10.0
 oscillation_distance: 0.5
 recovery_behavior_enabled: true
-clearing_rotation_allowed: false
+clearing_rotation_allowed: true

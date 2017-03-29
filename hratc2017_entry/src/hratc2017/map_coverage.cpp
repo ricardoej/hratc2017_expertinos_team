@@ -189,4 +189,15 @@ bool MapCoverage::isInsideMineArea(geometry_msgs::Point waypoint,
   }
   return false;
 }
+
+/**
+ * @brief MapCoverage::isInsideMapArea
+ * @param waypoint
+ * @return
+ */
+bool MapCoverage::isInsideMapArea(geometry_msgs::Point waypoint) const
+{
+  // tem que implementar ainda
+  return true;
+}
 }

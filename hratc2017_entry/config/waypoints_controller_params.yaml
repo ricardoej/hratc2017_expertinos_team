@@ -4,36 +4,36 @@ landmine_radius_area: 1.0
 waypoints:
   manual: true
   size: 11
-  wp0:
+  waypoint0:
     x: 1.08414
     y: -0.203271
-  wp1:
+  waypoint1:
     x: 0.592041
     y: -0.198308
-  wp2:
+  waypoint2:
     x: -0.127722
     y: -0.181265
-  wp3:
-    x: 2.16829
+  waypoint3:
+    x: 1.56829
     y: -0.406542
-  wp4:
-    x: -3.26997
+  waypoint4:
+    x: -2.26997
     y: -0.405549
-  wp5:
+  waypoint5:
     x: 4.33658
     y: -0.813085
-  wp6:
-    x: -9.8099
+  waypoint6:
+    x: -5.8099
     y: -1.21665
-  wp7:
-    x: -10.1883
+  waypoint7:
+    x: -6.1883
     y: 3.16767
-  wp8:
-    x: 10.2281
+  waypoint8:
+    x: 7.2281
     y: 4.03173
-  wp9:
-    x: 9.7573
+  waypoint9:
+    x: 6.7573
     y: -1.82944
-  wp10:
+  waypoint10:
     x: 0.0
     y: 0.0
