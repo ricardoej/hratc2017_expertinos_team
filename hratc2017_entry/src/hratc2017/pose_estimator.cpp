@@ -37,10 +37,15 @@ PoseEstimator::PoseEstimator(ros::NodeHandle* nh)
   odom_p3at_sub_ =
       nh->subscribe("odom", 1, &PoseEstimator::odomP3atCallback, this);
   imu_sub_ = nh->subscribe("/imu/data", 1, &PoseEstimator::imuCallback, this);
+  ekf_pose_sub_ = nh->subscribe("/robot_pose_ekf/odom", 1, &PoseEstimator::ekfCallback, this);
+
+  ekf_odometry_pub_ = nh->advertise<nav_msgs::Odometry>("/robot_pose_ekf/odometry", 10, true);
   pose_estimated_pub_ =
       nh->advertise<nav_msgs::Odometry>("/odom_w_offset", 10, true);
   cmd_vel_pub_ = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1, true);
   imu_pub_ = nh->advertise<sensor_msgs::Imu>("/imu_w_offset", 10, true);
+
+
   start_hratc2017_cli_ =
       nh->serviceClient<std_srvs::Trigger>("/start_hratc2017");
 }
@@ -53,6 +58,8 @@ PoseEstimator::~PoseEstimator()
   gps_odom_sub_.shutdown();
   cmd_vel_pub_.shutdown();
   pose_estimated_pub_.shutdown();
+  ekf_odometry_pub_.shutdown();
+  ekf_pose_sub_.shutdown();
   odom_p3at_sub_.shutdown();
   imu_sub_.shutdown();
   start_hratc2017_cli_.shutdown();
@@ -257,6 +264,15 @@ void PoseEstimator::setVelocity(double vx, double wz)
   msg.angular.z = wz;
   cmd_vel_pub_.publish(msg);
 }
+
+void PoseEstimator::ekfCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
+{
+  ekf_odometry_ = odom_p3at_;
+  ekf_odometry_.pose = msg->pose;
+  ekf_odometry_pub_.publish(ekf_odometry_);
+
+}
+
 
 /**
  * @brief PoseEstimator::startHRATC2017

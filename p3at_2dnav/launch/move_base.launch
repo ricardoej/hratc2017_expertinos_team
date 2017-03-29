@@ -10,7 +10,7 @@
     <rosparam file="$(find p3at_2dnav)/config/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find p3at_2dnav)/config/move_base_params.yaml" command="load" />
     <remap from="cmd_vel" to="/p3at/move_base/cmd_vel"/>
-    <remap from="odom" to="robot_pose_ekf/odom"/>
+    <remap from="odom" to="robot_pose_ekf/odometry"/>
     <remap from="map" to="/map"/>
   </node>
 </launch>

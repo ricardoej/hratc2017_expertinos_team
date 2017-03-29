@@ -15,6 +15,7 @@
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseWithCovariance.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
@@ -76,6 +77,9 @@ private:
   nav_msgs::Odometry odom_p3at_;
   nav_msgs::Odometry odom_initial_;
   nav_msgs::Odometry odom_w_offset_;
+  nav_msgs::Odometry ekf_odometry_;
+
+  geometry_msgs::PoseWithCovariance ekf_pose_;
 
   ros::Subscriber gps_odom_sub_;
   ros::Subscriber odom_p3at_sub_;
@@ -83,6 +87,8 @@ private:
   ros::Subscriber initial_pose_sub_;
   ros::Subscriber odom_data_sub_;
   ros::Subscriber odom_initial_sub_;
+  ros::Subscriber ekf_pose_sub_;
+  ros::Publisher ekf_odometry_pub_;
   ros::Publisher imu_pub_;
   ros::Publisher odom_offset_pub_;
   ros::Publisher cmd_vel_pub_;
@@ -100,6 +106,7 @@ private:
   void odomP3atCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void cornersCallback(const visualization_msgs::MarkerArray::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+  void ekfCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
   void calcPoseEstimated();
   void sendImuEkf();
   void sendOdomWithOffset();
