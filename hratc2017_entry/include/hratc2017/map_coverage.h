@@ -27,9 +27,11 @@ class MapCoverage
 {
 public:
   MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg,
-      double map_coverage_offset = DEFAULT_MAP_COVERAGE_OFFSET,
-      double map_coverage_margin = DEFAULT_MAP_COVERAGE_MARGIN,
-      double landmine_radius_area = DEFAULT_LANDMINE_RADIUS_AREA);
+              double map_coverage_offset = DEFAULT_MAP_COVERAGE_OFFSET,
+              double map_coverage_margin = DEFAULT_MAP_COVERAGE_MARGIN,
+              double landmine_radius_area = DEFAULT_LANDMINE_RADIUS_AREA,
+              std::list<geometry_msgs::Point> waypoints =
+                  std::list<geometry_msgs::Point>());
   virtual ~MapCoverage();
   geometry_msgs::Point getNextWaypoint() const;
   double getX() const;
@@ -50,7 +52,8 @@ private:
   std::string waypoints_str() const;
   void generateWaypoints();
   void clear();
-  bool isInsideMineArea(geometry_msgs::Point waypoint, geometry_msgs::Point &landmine) const;
+  bool isInsideMineArea(geometry_msgs::Point waypoint,
+                        geometry_msgs::Point& landmine) const;
 };
 }
 

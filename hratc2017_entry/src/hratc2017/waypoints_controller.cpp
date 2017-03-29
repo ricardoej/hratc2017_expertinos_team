@@ -21,21 +21,24 @@ namespace hratc2017
  */
 WaypointsController::WaypointsController(ros::NodeHandle* nh)
     : ROSNode(nh, 2), map_(NULL), move_base_client_("/move_base", true),
-      active_goal_(false), avoiding_obstacle_(false), scanning_(false), moving_away_(false), start_(false)
+      active_goal_(false), avoiding_obstacle_(false), scanning_(false),
+      moving_away_(false), start_(false)
 {
   corners_sub_ =
       nh->subscribe("/corners", 1, &WaypointsController::cornersCallback, this);
-  avoiding_obstacle_sub_ = nh->subscribe("avoiding_obstacle", 1,
-                                &WaypointsController::avoidingObstacleCallback, this);
+  avoiding_obstacle_sub_ =
+      nh->subscribe("avoiding_obstacle", 1,
+                    &WaypointsController::avoidingObstacleCallback, this);
   scanning_sub_ = nh->subscribe("scanning", 1,
                                 &WaypointsController::scanningCallback, this);
-  moving_away_sub_ = nh->subscribe("moving_away", 1,
-                                &WaypointsController::movingAwayCallback, this);
+  moving_away_sub_ = nh->subscribe(
+      "moving_away", 1, &WaypointsController::movingAwayCallback, this);
   set_mine_sub_ = nh->subscribe("/HRATC_FW/set_mine", 1,
                                 &WaypointsController::setMineCallback, this);
   waypoints_pub_ =
       nh->advertise<visualization_msgs::Marker>("waypoint_markers", 0);
-  start_srv_ = nh->advertiseService("/start_hratc2017", &WaypointsController::startCallback, this);
+  start_srv_ = nh->advertiseService("/start_hratc2017",
+                                    &WaypointsController::startCallback, this);
 }
 
 /**
@@ -59,10 +62,7 @@ WaypointsController::~WaypointsController()
  * @brief WaypointsController::isSettedUp
  * @return
  */
-bool WaypointsController::isSettedUp()
-{
-  return start_;
-}
+bool WaypointsController::isSettedUp() { return start_; }
 
 /**
  * @brief WaypointsController::controlLoop
@@ -168,28 +168,49 @@ void WaypointsController::cornersCallback(
   double landmine_radius_area;
   pnh.param("landmine_radius_area", landmine_radius_area,
             DEFAULT_LANDMINE_RADIUS_AREA);
+  bool waypoints_manual;
+  pnh.param("waypoints/manual", waypoints_manual, false);
+  std::list<geometry_msgs::Point> waypoints;
+  if (waypoints_manual)
+  {
+    int waypoints_size;
+    pnh.param("waypoints/size", waypoints_size, 0);
+    geometry_msgs::Point p;
+    for (int i(0); i < waypoints_size; i++)
+    {
+      std::stringstream ss;
+      ss << "waypoints/wp" << i << "/";
+      pnh.param(ss.str() + "x", p.x, 0.0);
+      pnh.param(ss.str() + "y", p.y, 0.0);
+      ROS_INFO("%d) Adding manual waypoint @ (%lf, %lf)", i, p.x, p.y);
+      waypoints.push_back(p);
+    }
+  }
   try
   {
-    map_ =
-        new MapCoverage(corners, map_coverage_offset, map_coverage_margin, landmine_radius_area);
-    ROS_INFO("%s", map_->c_str());
+    map_ = new MapCoverage(corners, map_coverage_offset, map_coverage_margin,
+                           landmine_radius_area, waypoints);
   }
   catch (utilities::Exception ex)
   {
     ROS_FATAL("Exception catched: %s", ex.what());
+    return;
   }
+  ROS_INFO("%s", map_->c_str());
 }
 
 /**
  * @brief WaypointsController::avoidingObstacleCallback
  * @param msg
  */
-void WaypointsController::avoidingObstacleCallback(const std_msgs::Bool::ConstPtr &msg)
+void WaypointsController::avoidingObstacleCallback(
+    const std_msgs::Bool::ConstPtr& msg)
 {
   if (avoiding_obstacle_ != msg->data)
   {
     avoiding_obstacle_ = msg->data;
-    ROS_DEBUG("Is avoiding obstacle? %s.", avoiding_obstacle_ ? "TRUE" : "FALSE");
+    ROS_DEBUG("Is avoiding obstacle? %s.",
+              avoiding_obstacle_ ? "TRUE" : "FALSE");
   }
 }
 
@@ -211,7 +232,8 @@ void WaypointsController::scanningCallback(const std_msgs::Bool::ConstPtr& msg)
  * @brief WaypointsController::movingAwayCallback
  * @param msg
  */
-void WaypointsController::movingAwayCallback(const std_msgs::Bool::ConstPtr &msg)
+void WaypointsController::movingAwayCallback(
+    const std_msgs::Bool::ConstPtr& msg)
 {
   if (moving_away_ != msg->data)
   {
@@ -226,7 +248,8 @@ void WaypointsController::movingAwayCallback(const std_msgs::Bool::ConstPtr &msg
  * @param response
  * @return
  */
-bool WaypointsController::startCallback(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool WaypointsController::startCallback(std_srvs::Trigger::Request& request,
+                                        std_srvs::Trigger::Response& response)
 {
   if (!start_)
   {
@@ -246,9 +269,10 @@ bool WaypointsController::startCallback(std_srvs::Trigger::Request &request, std
  * @brief WaypointsController::setMineCallback receives a found mine
  * @param msg mine
  */
-void WaypointsController::setMineCallback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void WaypointsController::setMineCallback(
+    const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-	map_->addMine(msg->pose.position);
+  map_->addMine(msg->pose.position);
 }
 
 /**
