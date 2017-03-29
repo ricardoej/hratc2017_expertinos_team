@@ -61,7 +61,7 @@ bool DisplacementMonitor::goalAchieved() const
  */
 bool DisplacementMonitor::goalXAchieved() const
 {
-  return goal_setted_ && fabs(disp_x_ - goal_x_) <= linear_tolerance_;
+  return goal_setted_ && fabs((disp_x_ - goal_x_) / goal_x_) <= linear_tolerance_;
 }
 
 /**
@@ -70,7 +70,7 @@ bool DisplacementMonitor::goalXAchieved() const
  */
 bool DisplacementMonitor::goalYAchieved() const
 {
-  return goal_setted_ && fabs(disp_y_ - goal_y_) <= linear_tolerance_;
+  return goal_setted_ && fabs((disp_y_ - goal_y_) / goal_y_) <= linear_tolerance_;
 }
 
 /**
@@ -79,7 +79,8 @@ bool DisplacementMonitor::goalYAchieved() const
  */
 bool DisplacementMonitor::goalPhiAchieved() const
 {
-  return goal_setted_ && fabs(disp_phi_ - goal_phi_) <= angular_tolerance_;
+  return goal_setted_ &&
+         fabs((disp_phi_ - goal_phi_) / goal_phi_) <= angular_tolerance_;
 }
 
 /**
@@ -102,6 +103,24 @@ double DisplacementMonitor::getPhiError() const
 {
   return goal_phi_ - disp_phi_;
 }
+
+/**
+ * @brief DisplacementMonitor::getXGoal
+ * @return
+ */
+double DisplacementMonitor::getXGoal() const { return goal_x_; }
+
+/**
+ * @brief DisplacementMonitor::getYGoal
+ * @return
+ */
+double DisplacementMonitor::getYGoal() const { return goal_y_; }
+
+/**
+ * @brief DisplacementMonitor::getPhiGoal
+ * @return
+ */
+double DisplacementMonitor::getPhiGoal() const { return goal_phi_; }
 
 /**
  * @brief DisplacementMonitor::getDispX

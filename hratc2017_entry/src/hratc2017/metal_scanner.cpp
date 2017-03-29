@@ -158,11 +158,15 @@ void MetalScanner::setNextState()
       ROS_INFO("   S4_SCANNING_BACK  -->  S5_MOVING_BACK");
       disp_monitor_.reset();
       disp_monitor_.setGoal(s5_moving_back_x_);
+      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
     }
     break;
   case states::S5_MOVING_BACK:
 //    ROS_INFO("\n DispX: %f \n GoalX: %f", disp_monitor_.getDispX(),
-//             s5_moving_back_x_);
+//             disp_monitor_.getXGoal());
+//    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
+//             disp_monitor_.getXError(), disp_monitor_.getDispY(),
+//             disp_monitor_.getPhiError());
     if (disp_monitor_.goalXAchieved())
     {
       current_state_ = states::S6_CHANGING_DIRECTION;
@@ -172,28 +176,29 @@ void MetalScanner::setNextState()
     break;
   case states::S6_CHANGING_DIRECTION:
 //    ROS_INFO("\n DispPhi: %f \n GoalPhi: %f", disp_monitor_.getDispPhi(),
-//             s6_changing_direction_phi_);
+//             disp_monitor_.getPhiGoal());
 //    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
 //             disp_monitor_.getXError(), disp_monitor_.getDispY(),
 //             disp_monitor_.getPhiError());
     if (disp_monitor_.goalPhiAchieved())
     {
       current_state_ = states::S7_MOVING_AWAY;
-      ROS_INFO("   S5_CHANGING_DIRECTION  -->  S6_MOVING_AWAY");
+      ROS_INFO("   S6_CHANGING_DIRECTION  -->  S7_MOVING_AWAY");
       disp_monitor_.reset();
-      disp_monitor_.setGoal(0.0, s7_moving_away_x_);
+      disp_monitor_.setGoal(s7_moving_away_x_);
+      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
     }
     break;
   case states::S7_MOVING_AWAY:
 //    ROS_INFO("\n DispX: %f \n GoalX: %f", disp_monitor_.getDispX(),
-//             s7_moving_away_x_);
+//             disp_monitor_.getXGoal());
 //    ROS_INFO("\n Error X: %f \n Error Y: %f \n Error Phi: %f",
 //             disp_monitor_.getXError(), disp_monitor_.getDispY(),
 //             disp_monitor_.getPhiError());
     if (disp_monitor_.goalXAchieved())
     {
       reset();
-      ROS_INFO("   S6_MOVING_AWAY  -->  S0_SETTING_UP");
+      ROS_INFO("   S7_MOVING_AWAY  -->  S0_SETTING_UP");
     }
     break;
   }
@@ -235,6 +240,8 @@ void MetalScanner::setVelocity()
     wz = disp_monitor_.getPhiError() * angular_Kp_;
   }
   wz *= fabs(wz) > wz_ ? wz_ / fabs(wz) : 1;
+//  if (moving_away_)
+//    ROS_INFO("\n Vx: %f \n Wx: %f", vx, wz);
   switch (current_state_)
   {
   case states::S0_SETTING_UP:
@@ -255,12 +262,11 @@ void MetalScanner::setVelocity()
     break;
   case states::S4_SCANNING_BACK:
     ROS_DEBUG("   S4 - Scanning back!");
-    // setMovingAway(true);
     setVelocity(vx, wz);
     break;
   case states::S5_MOVING_BACK:
     ROS_DEBUG("   S5 - Moving back!");
-    // setMovingAway(true);
+    setMovingAway(true);
     setVelocity(vx, wz);
     break;
   case states::S6_CHANGING_DIRECTION:

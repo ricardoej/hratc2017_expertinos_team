@@ -40,6 +40,9 @@ public:
   double getXError() const;
   double getYError() const;
   double getPhiError() const;
+  double getXGoal() const;
+  double getYGoal() const;
+  double getPhiGoal() const;
   void setGoal(double x, double phi = 0.0);
   void setGoal(double x, double y, double phi);
   void setLinearTolerance(double tol);
