@@ -7,7 +7,6 @@ The Anti-Personnel Mine Ban Convention is one of the world's most widely accepte
 ```
 sudo apt-get install ros-indigo-twist-mux
 sudo apt-get install ros-indigo-navigation
-sudo apt-get install ros-indigo-hector-slam
 ```
 
 - Unzip the source code in `[your_catkin_workspace]/src`
@@ -32,6 +31,5 @@ roslaunch hratc2017_entry entry.launch simulation:=true
 - Otherwise, run the following commands for real robot aplication:
 
 ```
-roslaunch hratc2017_robot trouble.launch
-roslaunch hratc2017_entry entry.launch
+roslaunch hratc2017_entry entry.launch simulation:=false
 ```
