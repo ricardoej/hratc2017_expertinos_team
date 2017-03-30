@@ -31,4 +31,5 @@
   </include>
   <node name="map_server" pkg="map_server" type="map_server" args="$(find hratc2017_entry)/map/$(arg arena).yaml"/>
   <node pkg="rosbag" type="record" name="rosbag_expertinos" args="-o $(find hratc2017_entry)/expertinos_bag -a" if="$(arg record_bag)"/>
+
 </launch>

@@ -1,6 +1,6 @@
 <launch>
   <arg name="empty" default="true"/>
-  <arg name="gui" default="false"/>
+  <arg name="gui" default="true"/>
   <!-- Open the Gazebo world -->
   <include if="$(arg empty)" file="$(find hratc2017_entry)/launch/world-empty.launch">
     <arg name="gui" value="$(arg gui)"/>

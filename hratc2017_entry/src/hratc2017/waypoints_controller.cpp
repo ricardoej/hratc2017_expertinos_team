@@ -69,6 +69,16 @@ bool WaypointsController::isSettedUp() { return start_; }
  */
 void WaypointsController::controlLoop()
 {
+//  ros::Rate r(1);
+//  geometry_msgs::Point w(map_->getNextWaypoint());
+//  publishWaypoint(w);
+//  r.sleep();
+//  ROS_INFO("waypoint: (%lf, %lf)", w.x, w.y);
+//  map_->pop();
+//  if (map_->empty())
+//  {
+//    ROSNode::shutdown();
+//  }
   if (!move_base_client_.waitForServer(ros::Duration(0.5)))
   {
     ROS_WARN("Waiting for the move_base action server to come up.");

@@ -158,7 +158,7 @@ void MetalScanner::setNextState()
       ROS_INFO("   S4_SCANNING_BACK  -->  S5_MOVING_BACK");
       disp_monitor_.reset();
       disp_monitor_.setGoal(s5_moving_back_x_);
-      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
+//      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
     }
     break;
   case states::S5_MOVING_BACK:
@@ -186,7 +186,7 @@ void MetalScanner::setNextState()
       ROS_INFO("   S6_CHANGING_DIRECTION  -->  S7_MOVING_AWAY");
       disp_monitor_.reset();
       disp_monitor_.setGoal(s7_moving_away_x_);
-      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
+//      ROS_ERROR("   Goal X: %f", disp_monitor_.getXGoal());
     }
     break;
   case states::S7_MOVING_AWAY:

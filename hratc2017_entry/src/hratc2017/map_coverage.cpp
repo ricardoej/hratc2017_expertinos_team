@@ -37,6 +37,8 @@ MapCoverage::MapCoverage(visualization_msgs::MarkerArray::ConstPtr msg,
   }
   if (waypoints_.empty())
   {
+    std::stringstream ss;
+    ss << "GERANDO WAYPOINTS!!\n";
     generateWaypoints();
   }
 }
